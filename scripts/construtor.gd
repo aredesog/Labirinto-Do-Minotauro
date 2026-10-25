@@ -13,10 +13,15 @@ static func material(cor: Color) -> StandardMaterial3D:
 
 ## Cria uma caixa. Se `solida` for true, ela vira um StaticBody3D com colisão.
 static func caixa(pai: Node, tamanho: Vector3, posicao: Vector3, cor: Color, solida := true) -> Node3D:
+	return caixa_com_material(pai, tamanho, posicao, material(cor), solida)
+
+
+## Igual à `caixa`, mas reaproveitando um material (bom quando são centenas de peças).
+static func caixa_com_material(pai: Node, tamanho: Vector3, posicao: Vector3, mat: Material, solida := true) -> Node3D:
 	var malha := MeshInstance3D.new()
 	var box := BoxMesh.new()
 	box.size = tamanho
-	box.material = material(cor)
+	box.material = mat
 	malha.mesh = box
 
 	if not solida:

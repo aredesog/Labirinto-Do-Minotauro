@@ -95,6 +95,12 @@ func levar_dano(quantidade: int) -> void:
 		morreu.emit()
 
 
+func curar() -> void:
+	if vivo and vida < VIDA_MAX:
+		vida = VIDA_MAX
+		vida_mudou.emit(vida)
+
+
 func reviver(posicao: Vector3) -> void:
 	global_position = posicao
 	velocity = Vector3.ZERO

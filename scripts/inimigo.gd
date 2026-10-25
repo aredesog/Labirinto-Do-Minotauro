@@ -1,7 +1,12 @@
 extends CharacterBody3D
 ## Minitaurinho (ou o Minotauro, com `eh_chefe = true`).
-## Fica parado até a sala ser ativada; depois persegue o Teseu.
-## Antes de golpear, ele "prepara" o ataque (fica mais claro), o que dá
+##
+## Dois jeitos de existir:
+##   - de sala: fica parado até a sala ser ativada e então persegue o Teseu;
+##   - errante (`errante = true`): anda pelos corredores e, quando sente o
+##     Teseu por perto, segue o caminho do labirinto até ele.
+##
+## Antes de golpear ele "prepara" o ataque (fica mais claro), o que dá
 ## tempo de o jogador desviar.
 
 signal morreu(inimigo: Node3D)
@@ -10,12 +15,16 @@ const Construtor := preload("res://scripts/construtor.gd")
 
 const TEMPO_PREPARO := 0.45
 const RECARGA_GOLPE := 1.1
+const FARO := 7               # até quantas células de caminho o errante sente o Teseu
+const INTERVALO_ROTA := 0.4
 
 var vida_max := 2
 var velocidade := 2.6
 var escala := 1.0
 var cor := Color(0.55, 0.32, 0.18)
 var eh_chefe := false
+var errante := false
+var mapa: RefCounted          # gerador_labirinto.gd, usado pelos errantes
 
 var vida := 2
 var vivo := true
@@ -31,6 +40,12 @@ var _piscar := 0.0
 var _tempo_ate_investida := 3.0
 var _investida := 0.0
 var _direcao_investida := Vector3.ZERO
+# Rota do errante
+var _tempo_rota := 0.0
+var _destino := Vector3.INF
+var _celula_anterior := Vector2i(-1, -1)
+var _perseguindo := false
+var _direto := false
 
 var _gravidade: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _pivo: Node3D
@@ -45,6 +60,13 @@ func configurar(p_vida: int, p_velocidade: float, p_escala: float, p_cor: Color,
 	escala = p_escala
 	cor = p_cor
 	eh_chefe = p_chefe
+
+
+## Transforma em errante. Chame antes de adicionar na árvore.
+func tornar_errante(p_mapa: RefCounted) -> void:
+	errante = true
+	mapa = p_mapa
+	acordado = true
 
 
 func _ready() -> void:
@@ -87,17 +109,24 @@ func _physics_process(delta: float) -> void:
 
 	var horizontal := Vector3.ZERO
 	var jogador := get_tree().get_first_node_in_group("jogador")
+	var jogador_ok: bool = jogador != null and jogador.vivo
 
-	if vivo and acordado and jogador and jogador.vivo:
-		var para: Vector3 = jogador.global_position - global_position
-		para.y = 0.0
-		var distancia := para.length()
+	if vivo and acordado:
+		var para := Vector3.ZERO
+		var distancia := INF
+		if jogador_ok:
+			para = jogador.global_position - global_position
+			para.y = 0.0
+			distancia = para.length()
+
+		if errante:
+			_atualizar_rota(delta, jogador if jogador_ok else null)
+		else:
+			_perseguindo = jogador_ok
+			_direto = jogador_ok
+
 		var alcance := raio + 0.4 + 0.5
-		if distancia > 0.01:
-			_pivo.rotation.y = atan2(-para.x, -para.z)
-
 		if _investida > 0.0:
-			# Chefe avançando em linha reta.
 			_investida -= delta
 			horizontal = _direcao_investida * velocidade * 3.0
 			if distancia <= alcance:
@@ -110,7 +139,9 @@ func _physics_process(delta: float) -> void:
 					jogador.levar_dano(1)
 				_recarga = RECARGA_GOLPE
 				_material.albedo_color = cor
-		else:
+		elif _perseguindo and _direto:
+			if distancia > 0.01:
+				_olhar(para)
 			if distancia > alcance - 0.2:
 				horizontal = para / distancia * velocidade
 			if distancia <= alcance and _recarga <= 0.0:
@@ -122,6 +153,13 @@ func _physics_process(delta: float) -> void:
 					_investida = 0.6
 					_direcao_investida = para / distancia
 					_tempo_ate_investida = randf_range(3.0, 5.0)
+		elif errante and _destino != Vector3.INF:
+			var ate: Vector3 = _destino - global_position
+			ate.y = 0.0
+			if ate.length() > 0.05:
+				_olhar(ate)
+				var vel := velocidade if _perseguindo else velocidade * 0.5
+				horizontal = ate.normalized() * vel
 
 	horizontal += _empurrao
 	_empurrao = _empurrao.move_toward(Vector3.ZERO, 25.0 * delta)
@@ -155,7 +193,7 @@ func levar_dano(quantidade: int, direcao: Vector3) -> void:
 
 func resetar() -> void:
 	vivo = true
-	acordado = false
+	acordado = errante
 	vida = vida_max
 	position = _posicao_inicial
 	velocity = Vector3.ZERO
@@ -164,9 +202,49 @@ func resetar() -> void:
 	_recarga = 0.0
 	_investida = 0.0
 	_tempo_ate_investida = 3.0
+	_destino = Vector3.INF
+	_perseguindo = false
 	_material.albedo_color = cor
 	visible = true
 	_forma.set_deferred("disabled", false)
+
+
+# --- interno -------------------------------------------------------------
+
+func _olhar(direcao: Vector3) -> void:
+	_pivo.rotation.y = atan2(-direcao.x, -direcao.z)
+
+
+func _atualizar_rota(delta: float, jogador: Node3D) -> void:
+	_tempo_rota -= delta
+	var chegou := _destino == Vector3.INF or Vector2(_destino.x - global_position.x, _destino.z - global_position.z).length() < 0.4
+	if _tempo_rota > 0.0 and not chegou:
+		return
+	_tempo_rota = INTERVALO_ROTA
+
+	var minha: Vector2i = mapa.celula_de(global_position)
+	_perseguindo = false
+	_direto = false
+
+	if jogador:
+		var alvo: Vector2i = mapa.celula_de(jogador.global_position)
+		var rota: Array[Vector2i] = mapa.caminho(minha, alvo)
+		if not rota.is_empty() and rota.size() <= FARO:
+			_perseguindo = true
+			if rota.size() <= 2:
+				_direto = true
+			else:
+				_destino = mapa.centro(rota[1])
+			return
+
+	# Passeando: vai para uma célula vizinha, evitando voltar.
+	if chegou:
+		var opcoes: Array[Vector2i] = mapa.vizinhos_abertos(minha)
+		if opcoes.size() > 1:
+			opcoes.erase(_celula_anterior)
+		if not opcoes.is_empty():
+			_celula_anterior = minha
+			_destino = mapa.centro(opcoes[randi_range(0, opcoes.size() - 1)])
 
 
 func _morrer() -> void:

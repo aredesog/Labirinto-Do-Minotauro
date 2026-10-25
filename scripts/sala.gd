@@ -1,28 +1,23 @@
 extends Node3D
-## Uma sala do labirinto: chão, paredes com vãos de porta, grades e inimigos.
-## Ao entrar numa sala com combate, as grades fecham até todos os
-## inimigos serem derrotados.
+## Lógica de uma sala do labirinto (a geometria é feita pelo main.gd).
+## Tipos:
+##   "entrada"  - ponto de partida, sem combate
+##   "combate"  - as grades fecham até todos os minitaurinhos caírem
+##   "fonte"    - recupera a vida e vira checkpoint
+##   "chefe"    - a sala do Minotauro, trancada até as salas de combate serem liberadas
 
 signal ativada(sala)
 signal liberada(sala)
+signal fonte_visitada(sala)
 
 const Construtor := preload("res://scripts/construtor.gd")
 
-const ALTURA_PAREDE := 2.0
-const ESPESSURA := 0.5
-const LARGURA_PORTA := 2.0
-
-const COR_CHAO_A := Color(0.78, 0.72, 0.6)
-const COR_CHAO_B := Color(0.72, 0.66, 0.55)
-const COR_PAREDE := Color(0.55, 0.53, 0.5)
-const COR_GRADE := Color(0.25, 0.22, 0.2)
-const COR_GRADE_TRANCADA := Color(0.75, 0.6, 0.15)
+const COR_GRADE := Color(0.22, 0.2, 0.18)
+const COR_GRADE_TRANCADA := Color(0.8, 0.62, 0.15)
 
 var nome_sala := ""
+var tipo := "combate"
 var tamanho := Vector2(8, 8)
-var portas: Array[String] = []
-var tem_combate := true
-var eh_chefe := false
 
 var ativa := false
 var limpa := false
@@ -32,24 +27,33 @@ var inimigos: Array = []
 var _grades: Array[StaticBody3D] = []
 
 
-## Chame antes de adicionar a sala na árvore.
-func configurar(p_nome: String, p_tamanho: Vector2, p_portas: Array[String], p_tem_combate := true) -> void:
+## Chame antes de adicionar a sala na árvore. `posicao` é o centro da sala.
+func configurar(p_nome: String, p_tipo: String, p_tamanho: Vector2) -> void:
 	nome_sala = p_nome
+	tipo = p_tipo
 	tamanho = p_tamanho
-	portas = p_portas
-	tem_combate = p_tem_combate
-	limpa = not p_tem_combate
+	limpa = tipo != "combate" and tipo != "chefe"
 
 
 func _ready() -> void:
-	_criar_chao()
-	for lado in ["N", "S", "L", "O"]:
-		_criar_parede(lado, lado in portas)
-	for lado in portas:
-		_criar_grade(lado)
 	_criar_gatilho()
-	Construtor.tocha(self, Vector3(0, 1.8, 0), maxf(tamanho.x, tamanho.y))
-	_definir_grades(trancada)
+	var alcance := maxf(tamanho.x, tamanho.y) * 0.9
+	if tipo == "fonte":
+		_criar_fonte()
+	else:
+		Construtor.tocha(self, Vector3(0, 2.2, 0), alcance)
+
+
+func eh_combate() -> bool:
+	return tipo == "combate" or tipo == "chefe"
+
+
+## Grade numa porta (posição local, relativa ao centro da sala).
+func adicionar_grade(posicao_local: Vector3, tamanho_grade: Vector3) -> void:
+	var cor := COR_GRADE_TRANCADA if trancada else COR_GRADE
+	var grade := Construtor.caixa(self, tamanho_grade, posicao_local, cor) as StaticBody3D
+	_grades.append(grade)
+	_definir_grade(grade, trancada)
 
 
 func adicionar_inimigo(inimigo: Node3D) -> void:
@@ -61,8 +65,7 @@ func adicionar_inimigo(inimigo: Node3D) -> void:
 func trancar() -> void:
 	trancada = true
 	_pintar_grades(COR_GRADE_TRANCADA)
-	if is_inside_tree():
-		_definir_grades(true)
+	_definir_grades(true)
 
 
 func destrancar() -> void:
@@ -71,7 +74,7 @@ func destrancar() -> void:
 	_definir_grades(false)
 
 
-## Volta a sala ao estado inicial quando o jogador morre lá dentro.
+## Volta a sala ao estado inicial quando o jogador morre.
 func resetar() -> void:
 	if not ativa or limpa:
 		return
@@ -81,64 +84,14 @@ func resetar() -> void:
 		inimigo.resetar()
 
 
-# --- construção ----------------------------------------------------------
-
-func _criar_chao() -> void:
-	# Base sólida (cobre também a espessura das paredes, para não haver
-	# buraco no vão da porta).
-	var base := Vector3(tamanho.x + 2 * ESPESSURA, 0.2, tamanho.y + 2 * ESPESSURA)
-	Construtor.caixa(self, base, Vector3(0, -0.1, 0), COR_CHAO_B)
-	# Ladrilhos de 2 m em xadrez, só visuais, para dar noção de movimento.
-	var nx := int(tamanho.x / 2.0)
-	var nz := int(tamanho.y / 2.0)
-	for i in nx:
-		for j in nz:
-			if (i + j) % 2 == 0:
-				var pos := Vector3(-tamanho.x / 2.0 + 1.0 + i * 2.0, 0.005, -tamanho.y / 2.0 + 1.0 + j * 2.0)
-				Construtor.caixa(self, Vector3(2, 0.01, 2), pos, COR_CHAO_A, false)
-
-
-func _criar_parede(lado: String, com_porta: bool) -> void:
-	var horizontal := lado == "N" or lado == "S"
-	# N/S cobrem os cantos; L/O ficam só no comprimento interno.
-	var comprimento := tamanho.x + 2 * ESPESSURA if horizontal else tamanho.y
-	var fixo := _coordenada_parede(lado)
-	var trechos: Array = []
-	if com_porta:
-		var metade_vao := LARGURA_PORTA / 2.0
-		var trecho := (comprimento / 2.0) - metade_vao
-		trechos.append([-(metade_vao + trecho / 2.0), trecho])
-		trechos.append([metade_vao + trecho / 2.0, trecho])
-	else:
-		trechos.append([0.0, comprimento])
-
-	for t in trechos:
-		var centro: float = t[0]
-		var tam: float = t[1]
-		if horizontal:
-			Construtor.caixa(self, Vector3(tam, ALTURA_PAREDE, ESPESSURA),
-				Vector3(centro, ALTURA_PAREDE / 2.0, fixo), COR_PAREDE)
-		else:
-			Construtor.caixa(self, Vector3(ESPESSURA, ALTURA_PAREDE, tam),
-				Vector3(fixo, ALTURA_PAREDE / 2.0, centro), COR_PAREDE)
-
-
-func _criar_grade(lado: String) -> void:
-	var horizontal := lado == "N" or lado == "S"
-	var fixo := _coordenada_parede(lado)
-	var tam := Vector3(LARGURA_PORTA, ALTURA_PAREDE, 0.2) if horizontal else Vector3(0.2, ALTURA_PAREDE, LARGURA_PORTA)
-	var pos := Vector3(0, ALTURA_PAREDE / 2.0, fixo) if horizontal else Vector3(fixo, ALTURA_PAREDE / 2.0, 0)
-	var grade := Construtor.caixa(self, tam, pos, COR_GRADE) as StaticBody3D
-	_grades.append(grade)
-
+# --- interno -------------------------------------------------------------
 
 func _criar_gatilho() -> void:
-	# Área um pouco menor que a sala: o jogador já está todo dentro
-	# quando as grades fecham.
+	# Área menor que a sala: o jogador já está todo dentro quando as grades fecham.
 	var area := Area3D.new()
 	var forma := CollisionShape3D.new()
 	var shape := BoxShape3D.new()
-	shape.size = Vector3(maxf(tamanho.x - 2.0, 1.0), 2.0, maxf(tamanho.y - 2.0, 1.0))
+	shape.size = Vector3(maxf(tamanho.x - 2.5, 1.0), 2.0, maxf(tamanho.y - 2.5, 1.0))
 	forma.shape = shape
 	forma.position.y = 1.0
 	area.add_child(forma)
@@ -146,24 +99,22 @@ func _criar_gatilho() -> void:
 	area.body_entered.connect(_on_corpo_entrou)
 
 
-func _coordenada_parede(lado: String) -> float:
-	match lado:
-		"N":
-			return -(tamanho.y / 2.0 + ESPESSURA / 2.0)
-		"S":
-			return tamanho.y / 2.0 + ESPESSURA / 2.0
-		"L":
-			return tamanho.x / 2.0 + ESPESSURA / 2.0
-		_:
-			return -(tamanho.x / 2.0 + ESPESSURA / 2.0)
+func _criar_fonte() -> void:
+	Construtor.caixa(self, Vector3(2.4, 0.6, 2.4), Vector3(0, 0.3, 0), Color(0.6, 0.6, 0.62))
+	Construtor.caixa(self, Vector3(2.0, 0.05, 2.0), Vector3(0, 0.62, 0), Color(0.3, 0.65, 0.95), false)
+	Construtor.caixa(self, Vector3(0.4, 1.4, 0.4), Vector3(0, 1.3, 0), Color(0.65, 0.65, 0.67))
+	var luz := Construtor.tocha(self, Vector3(0, 2.0, 0), 7.0)
+	luz.light_color = Color(0.45, 0.75, 1.0)
 
-
-# --- estado --------------------------------------------------------------
 
 func _definir_grades(fechadas: bool) -> void:
 	for grade in _grades:
-		grade.visible = fechadas
-		grade.get_child(1).set_deferred("disabled", not fechadas)
+		_definir_grade(grade, fechadas)
+
+
+func _definir_grade(grade: StaticBody3D, fechada: bool) -> void:
+	grade.visible = fechada
+	grade.get_child(1).set_deferred("disabled", not fechada)
 
 
 func _pintar_grades(cor: Color) -> void:
@@ -175,7 +126,10 @@ func _pintar_grades(cor: Color) -> void:
 func _on_corpo_entrou(corpo: Node3D) -> void:
 	if not corpo.is_in_group("jogador") or not corpo.vivo:
 		return
-	if not tem_combate or limpa or ativa:
+	if tipo == "fonte":
+		fonte_visitada.emit(self)
+		return
+	if not eh_combate() or limpa or ativa:
 		return
 	ativa = true
 	_definir_grades(true)
