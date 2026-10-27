@@ -1,0 +1,33 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/salas/portao_minotauro.gd" id="1_3hi3l"]
+[ext_resource type="PackedScene" path="res://assets/modelos/cenario/portao_minotauro.glb" id="2_o7ma6"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_22hdo"]
+size = Vector3(3, 2.8, 0.3)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_7muon"]
+size = Vector3(0.5, 3, 0.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wdptx"]
+size = Vector3(0.5, 3, 0.5)
+
+[node name="PortaoMinotauro" type="Node3D" unique_id=1023879291]
+script = ExtResource("1_3hi3l")
+
+[node name="Modelo" type="Node3D" parent="." unique_id=542731241 instance=ExtResource("2_o7ma6")]
+
+[node name="Corpo" type="StaticBody3D" parent="." unique_id=1709772397]
+collision_mask = 0
+
+[node name="Bloqueio" type="CollisionShape3D" parent="Corpo" unique_id=267686188]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 0)
+shape = SubResource("BoxShape3D_22hdo")
+
+[node name="Coluna" type="CollisionShape3D" parent="Corpo" unique_id=1007157893]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.75, 1.5, 0)
+shape = SubResource("BoxShape3D_7muon")
+
+[node name="Coluna2" type="CollisionShape3D" parent="Corpo" unique_id=1681523971]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.75, 1.5, 0)
+shape = SubResource("BoxShape3D_wdptx")

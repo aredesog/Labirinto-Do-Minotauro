@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/puzzles/espelhos/fonte_luz.gd" id="1_oysiv"]
+[ext_resource type="PackedScene" path="res://assets/modelos/puzzles/fonte_luz.glb" id="2_4heka"]
+
+[node name="FonteLuz" type="Node3D" unique_id=472389262]
+script = ExtResource("1_oysiv")
+
+[node name="Modelo" type="Node3D" parent="." unique_id=1114427882 instance=ExtResource("2_4heka")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.44, 0)
+
+[node name="Emissor" type="Marker3D" parent="." unique_id=291463123]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.06, 0.12)

@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/puzzles/espelhos/espelho.gd" id="1_pqy22"]
+[ext_resource type="PackedScene" path="res://assets/modelos/puzzles/espelho.glb" id="2_3ehx8"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_uy74b"]
+size = Vector3(0.9, 1, 0.1)
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_eoexl"]
+height = 0.2
+radius = 0.42
+
+[node name="Espelho" type="StaticBody3D" unique_id=1747767474]
+collision_mask = 0
+script = ExtResource("1_pqy22")
+
+[node name="Modelo" type="Node3D" parent="." unique_id=1660275149 instance=ExtResource("2_3ehx8")]
+
+[node name="FormaEspelho" type="CollisionShape3D" parent="." unique_id=1506111212]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.06, 0)
+shape = SubResource("BoxShape3D_uy74b")
+
+[node name="FormaBase" type="CollisionShape3D" parent="." unique_id=1528694775]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
+shape = SubResource("CylinderShape3D_eoexl")

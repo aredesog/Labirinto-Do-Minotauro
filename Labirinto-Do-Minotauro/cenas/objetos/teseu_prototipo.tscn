@@ -1,0 +1,112 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/jogador/teseu_prototipo.gd" id="1_iwpsn"]
+[ext_resource type="PackedScene" path="res://assets/modelos/personagens/prisioneiro.glb" id="2_64xvl"]
+[ext_resource type="PackedScene" path="res://assets/modelos/armas/escudo_hoplon.glb" id="3_udyhw"]
+[ext_resource type="PackedScene" path="res://assets/modelos/armas/espada_xiphos.glb" id="4_l2br4"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_8a443"]
+radius = 0.3
+height = 1.2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_70lyr"]
+albedo_color = Color(0.72156864, 0.20392157, 0.17254902, 1)
+roughness = 0.4
+
+[sub_resource type="TorusMesh" id="TorusMesh_cgtga"]
+material = SubResource("StandardMaterial3D_70lyr")
+inner_radius = 0.3
+outer_radius = 0.36
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fcsj5"]
+albedo_color = Color(0.72156864, 0.20392157, 0.17254902, 1)
+roughness = 0.4
+
+[sub_resource type="BoxMesh" id="BoxMesh_egj2u"]
+material = SubResource("StandardMaterial3D_fcsj5")
+size = Vector3(0.42, 0.5, 0.05)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rvc4q"]
+albedo_color = Color(0.7529412, 0.1882353, 0.16470589, 1)
+roughness = 0.8
+
+[sub_resource type="SphereMesh" id="SphereMesh_pd25e"]
+material = SubResource("StandardMaterial3D_rvc4q")
+radius = 0.15
+height = 0.3
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wn0pq"]
+albedo_color = Color(0.5568628, 0.12156863, 0.101960786, 1)
+roughness = 0.8
+
+[sub_resource type="TorusMesh" id="TorusMesh_2qh7k"]
+material = SubResource("StandardMaterial3D_wn0pq")
+inner_radius = 0.14
+outer_radius = 0.165
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_3wcue"]
+albedo_color = Color(0.5568628, 0.12156863, 0.101960786, 1)
+roughness = 0.8
+
+[sub_resource type="TorusMesh" id="TorusMesh_s6gof"]
+material = SubResource("StandardMaterial3D_3wcue")
+inner_radius = 0.14
+outer_radius = 0.165
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yw8rl"]
+albedo_color = Color(0.5568628, 0.12156863, 0.101960786, 1)
+roughness = 0.8
+
+[sub_resource type="TorusMesh" id="TorusMesh_lqst8"]
+material = SubResource("StandardMaterial3D_yw8rl")
+inner_radius = 0.14
+outer_radius = 0.165
+
+[node name="Teseu" type="CharacterBody3D" unique_id=982699155]
+collision_layer = 2
+collision_mask = 5
+script = ExtResource("1_iwpsn")
+
+[node name="Forma" type="CollisionShape3D" parent="." unique_id=696344739]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+shape = SubResource("CapsuleShape3D_8a443")
+
+[node name="Visual" type="Node3D" parent="." unique_id=644157755]
+
+[node name="Corpo" type="Node3D" parent="Visual" unique_id=818047475 instance=ExtResource("2_64xvl")]
+transform = Transform3D(1.15, 0, 0, 0, 1.15, 0, 0, 0, 1.15, 0, 0, 0)
+
+[node name="Faixa" type="MeshInstance3D" parent="Visual" unique_id=338034004]
+transform = Transform3D(1, 0, 0, 0, 0.5868886, 0.2079117, 0, -0.12474702, 0.9781476, 0, 1.08, 0.02)
+mesh = SubResource("TorusMesh_cgtga")
+
+[node name="Capa" type="MeshInstance3D" parent="Visual" unique_id=375289043]
+transform = Transform3D(1, 0, 0, 0, 0.9848077, -0.17364818, 0, 0.17364818, 0.9848077, 0, 0.4, -0.2)
+mesh = SubResource("BoxMesh_egj2u")
+
+[node name="Escudo" type="Node3D" parent="Visual" unique_id=1256344463 instance=ExtResource("3_udyhw")]
+transform = Transform3D(0.40148732, 0, 0.86099243, 0, 0.95, 0, -0.86099243, 0, 0.40148732, 0.36, 0.45, 0.06)
+
+[node name="Espada" type="Node3D" parent="Visual" unique_id=1910750157]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.42, 0)
+
+[node name="Xiphos" type="Node3D" parent="Visual/Espada" unique_id=626524880 instance=ExtResource("4_l2br4")]
+transform = Transform3D(1.15, 0, 0, 0, -5.0268095e-08, -1.15, 0, 1.15, -5.0268095e-08, 0, 0, 0.3)
+
+[node name="Novelo" type="Node3D" parent="Visual" unique_id=2049206386]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.38, -0.08)
+
+[node name="Bola" type="MeshInstance3D" parent="Visual/Novelo" unique_id=254200027]
+mesh = SubResource("SphereMesh_pd25e")
+
+[node name="Fio0" type="MeshInstance3D" parent="Visual/Novelo" unique_id=1207958495]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("TorusMesh_2qh7k")
+
+[node name="Fio1" type="MeshInstance3D" parent="Visual/Novelo" unique_id=564356071]
+transform = Transform3D(0.4330127, -0.8660254, 0.24999999, 0.49999997, -2.1855692e-08, -0.86602545, 0.75, 0.49999997, 0.43301266, 0, 0, 0)
+mesh = SubResource("TorusMesh_s6gof")
+
+[node name="Fio2" type="MeshInstance3D" parent="Visual/Novelo" unique_id=1022208751]
+transform = Transform3D(0.75, -0.5, -0.43301278, -0.50000006, 2.1855696e-08, -0.8660254, 0.4330127, 0.86602545, -0.25, 0, 0, 0)
+mesh = SubResource("TorusMesh_lqst8")

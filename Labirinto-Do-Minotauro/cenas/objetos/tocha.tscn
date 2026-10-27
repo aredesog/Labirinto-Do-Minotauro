@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/visual/tocha.gd" id="1_acgcr"]
+[ext_resource type="PackedScene" path="res://assets/modelos/cenario/tocha.glb" id="2_3lgp5"]
+
+[node name="Tocha" type="Node3D" unique_id=1693467517]
+script = ExtResource("1_acgcr")
+
+[node name="Modelo" type="Node3D" parent="." unique_id=32932644 instance=ExtResource("2_3lgp5")]
+
+[node name="Luz" type="OmniLight3D" parent="." unique_id=125521760]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.55, 0.25)
+light_color = Color(1, 0.627451, 0.2901961, 1)
+light_energy = 0.7
+omni_range = 3.5

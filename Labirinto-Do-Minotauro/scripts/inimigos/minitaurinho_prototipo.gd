@@ -1,0 +1,105 @@
+class_name Minitaurinho
+extends CharacterBody3D
+## Minitaurinho provisório: persegue o Teseu e ataca de perto.
+## Troque o nó "Visual" pelo .glb do minitaurinho quando estiver pronto.
+
+signal morreu(quem: Minitaurinho)
+
+@export var velocidade: float = 2.6
+## Vida reduzida para ~65% (era 3): 2 golpes de espada.
+@export var vida: int = 2
+## Tempo parado depois de surgir (dá chance ao jogador de se posicionar).
+@export var espera_ao_surgir: float = 0.9
+@export var dano: int = 1
+@export var distancia_ataque: float = 1.1
+@export var intervalo_ataque: float = 1.2
+
+var _alvo: Node3D
+var _cooldown := 0.8
+var _espera := 0.0
+var _atordoado := 0.0
+var _morto := false
+
+@onready var _visual: Node3D = get_node_or_null("Visual")
+
+
+func _ready() -> void:
+	add_to_group("inimigo")
+	_alvo = get_tree().get_first_node_in_group("jogador")
+	_espera = espera_ao_surgir
+	# surge do chão
+	if _visual:
+		_visual.scale = Vector3.ONE * 0.01
+		create_tween().tween_property(_visual, "scale", Vector3.ONE, 0.35) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _physics_process(delta: float) -> void:
+	if _morto:
+		return
+	if global_position.y < -3.0:  # caiu do mapa: conta como derrotado
+		_morrer()
+		return
+	_cooldown = max(_cooldown - delta, 0.0)
+	_atordoado = max(_atordoado - delta, 0.0)
+	_espera = max(_espera - delta, 0.0)
+	velocity.y = 0.0 if is_on_floor() else velocity.y - 20.0 * delta
+
+	if _alvo == null or _atordoado > 0.0 or _espera > 0.0:
+		velocity.x = move_toward(velocity.x, 0, 20 * delta)
+		velocity.z = move_toward(velocity.z, 0, 20 * delta)
+		move_and_slide()
+		return
+
+	var para_alvo := _alvo.global_position - global_position
+	para_alvo.y = 0
+	var distancia := para_alvo.length()
+	var dir := para_alvo.normalized() if distancia > 0.01 else Vector3.ZERO
+	if _visual and dir != Vector3.ZERO:
+		_visual.rotation.y = lerp_angle(_visual.rotation.y, atan2(dir.x, dir.z), 10.0 * delta)
+
+	if distancia > distancia_ataque * 0.85:
+		velocity.x = dir.x * velocidade
+		velocity.z = dir.z * velocidade
+	else:
+		velocity.x = 0
+		velocity.z = 0
+		if _cooldown <= 0.0:
+			_atacar(dir)
+	move_and_slide()
+
+
+func _atacar(dir: Vector3) -> void:
+	_cooldown = intervalo_ataque
+	if _visual:
+		var tw := create_tween()
+		tw.tween_property(_visual, "position", dir * 0.35, 0.08)
+		tw.tween_property(_visual, "position", Vector3.ZERO, 0.15)
+	if _alvo.has_method("levar_dano"):
+		_alvo.levar_dano(dano, dir)
+
+
+func levar_dano(quantidade: int, direcao: Vector3 = Vector3.ZERO) -> void:
+	if _morto:
+		return
+	vida -= quantidade
+	_atordoado = 0.35
+	velocity = direcao.normalized() * 6.0
+	if _visual:
+		var tw := create_tween()
+		tw.tween_property(_visual, "scale", Vector3(1.25, 0.75, 1.25), 0.06)
+		tw.tween_property(_visual, "scale", Vector3.ONE, 0.12)
+	if vida <= 0:
+		_morrer()
+
+
+func _morrer() -> void:
+	_morto = true
+	remove_from_group("inimigo")
+	collision_layer = 0
+	morreu.emit(self)
+	var tw := create_tween()
+	if _visual:
+		tw.tween_property(_visual, "scale", Vector3.ONE * 0.01, 0.3).set_trans(Tween.TRANS_BACK) \
+			.set_ease(Tween.EASE_IN)
+	tw.tween_callback(queue_free)
