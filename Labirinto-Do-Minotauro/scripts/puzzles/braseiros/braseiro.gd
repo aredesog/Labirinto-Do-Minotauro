@@ -100,6 +100,7 @@ func interagir(_quem: Node) -> void:
 
 func acender() -> void:
 	esta_aceso = true
+	Som.tocar("fogo")
 	if _fogo:
 		_fogo.visible = true
 		_fogo.scale = Vector3.ONE * 0.1

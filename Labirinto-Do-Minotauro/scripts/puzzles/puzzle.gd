@@ -31,6 +31,7 @@ func _concluir() -> void:
 		return
 	concluido = true
 	ativo = false
+	Som.tocar("resolvido")
 	resolvido.emit()
 
 

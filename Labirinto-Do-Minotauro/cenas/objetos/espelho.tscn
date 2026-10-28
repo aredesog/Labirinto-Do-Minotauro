@@ -10,16 +10,16 @@ size = Vector3(0.9, 1, 0.1)
 height = 0.2
 radius = 0.42
 
-[node name="Espelho" type="StaticBody3D" unique_id=1747767474]
+[node name="Espelho" type="StaticBody3D" unique_id=1505965226]
 collision_mask = 0
 script = ExtResource("1_pqy22")
 
 [node name="Modelo" type="Node3D" parent="." unique_id=1660275149 instance=ExtResource("2_3ehx8")]
 
-[node name="FormaEspelho" type="CollisionShape3D" parent="." unique_id=1506111212]
+[node name="FormaEspelho" type="CollisionShape3D" parent="." unique_id=1169671532]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.06, 0)
 shape = SubResource("BoxShape3D_uy74b")
 
-[node name="FormaBase" type="CollisionShape3D" parent="." unique_id=1528694775]
+[node name="FormaBase" type="CollisionShape3D" parent="." unique_id=454385869]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
 shape = SubResource("CylinderShape3D_eoexl")

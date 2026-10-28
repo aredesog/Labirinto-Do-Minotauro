@@ -36,6 +36,7 @@ func _aplicar(fechar_: bool, instantaneo := false) -> void:
 	if instantaneo:
 		_grade.position.y = y
 	else:
+		Som.tocar("grade", 0.0, 0.05, 1.0 if fechada else 1.15)
 		var tw := create_tween()
 		tw.tween_property(_grade, "position:y", y, duracao) \
 			.set_trans(Tween.TRANS_BOUNCE if fechada else Tween.TRANS_SINE) \

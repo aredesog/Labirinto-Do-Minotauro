@@ -3,10 +3,12 @@ extends Puzzle
 ## O mosaico na parede mostra a sequência de símbolos. Acender fora da ordem
 ## apaga todos e chama um minitaurinho de reforço.
 ##
-## Para mudar o enigma basta trocar "ordem" no Inspetor: o mosaico se
-## reorganiza sozinho.
+## A cada partida a ORDEM do mosaico e a POSIÇÃO de cada símbolo nos
+## braseiros são sorteadas (desligue "sortear" para usar a ordem fixa abaixo).
 
 @export var ordem: Array[String] = ["sol", "lua", "onda", "raio"]
+## Sorteia a ordem e qual braseiro tem qual símbolo ao iniciar.
+@export var sortear := true
 ## Nó onde as placas do mosaico são colocadas (da esquerda para a direita).
 @export var mosaico: Node3D
 @export var espacamento_mosaico: float = 0.7
@@ -19,7 +21,24 @@ func _ready() -> void:
 		mosaico = get_node_or_null("Mosaico") as Node3D
 	for b in filhos_no_grupo("braseiro"):
 		b.aceso.connect(_ao_acender)
+	if sortear:
+		sortear_enigma()
 	_montar_mosaico()
+
+
+## Embaralha a ordem do mosaico e troca os símbolos de lugar nos braseiros.
+func sortear_enigma() -> void:
+	var braseiros := filhos_no_grupo("braseiro")
+	var simbolos: Array[String] = []
+	for b in braseiros:
+		simbolos.append(b.simbolo)
+	simbolos.shuffle()
+	for i in braseiros.size():
+		braseiros[i].simbolo = simbolos[i]
+	var nova := ordem.duplicate()
+	while nova == ordem and ordem.size() > 1:
+		nova.shuffle()
+	ordem = nova
 
 
 func _montar_mosaico() -> void:
@@ -60,11 +79,14 @@ func _ao_acender(b: Braseiro) -> void:
 		return
 	if _progresso < ordem.size() and b.simbolo == ordem[_progresso]:
 		_progresso += 1
+		if _progresso < ordem.size():
+			Som.tocar("sino", -2.0, 0.0, [1.0, 1.122, 1.26, 1.5][mini(_progresso - 1, 3)])
 		if _progresso >= ordem.size():
 			_concluir()
 		return
 	# errou a ordem: tudo apaga
 	_progresso = 0
+	Som.tocar("erro")
 	for outro in filhos_no_grupo("braseiro"):
 		outro.apagar()
 		outro.piscar_erro()

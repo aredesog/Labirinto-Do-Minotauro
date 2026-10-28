@@ -43,6 +43,8 @@ func inimigos() -> Array:
 func matar_inimigos() -> void:
 	for i in get_nodes_in_group("inimigo"):
 		i.levar_dano(99)
+	for p in get_nodes_in_group("projetil"):
+		p.quebrar()
 	await esperar(0.6)
 
 
@@ -86,6 +88,8 @@ func checar_sorteio(a: Node, rotulo: String) -> void:
 
 
 func _rodar() -> void:
+	await _tela_titulo()
+	Config.mostrar_abertura = false
 	fase = (load("res://cenas/fase_principal.tscn") as PackedScene).instantiate()
 	root.add_child(fase)
 	await esperar(1.0)
@@ -101,6 +105,7 @@ func _rodar() -> void:
 		var n: int = sala(id).portas().size()
 		checar(n == 2 or n == 3, "sala %s tem %d portas-portal" % [id, n])
 	checar(fase.get_node("HUD/Desenho").vida == 10, "HUD: 5 corações (10 meios)")
+	checar(Som.faixa_atual() == "exploracao", "música de exploração na entrada")
 	await esperar(1.0)
 	await foto("01_inicio_portais")
 
@@ -116,6 +121,7 @@ func _rodar() -> void:
 	checar(portas_ativas(destino).is_empty(), "portais apagados durante o combate")
 	checar(inimigos().size() > 0, "surgem minitaurinhos")
 	checar(inimigos()[0].vida == 2, "minitaurinho tem 2 de vida (65%)")
+	checar(Som.faixa_atual() == "combate", "música de combate durante a luta")
 	await esperar(0.4)
 	await foto("02_chegada_" + destino.name)
 	jogo.reiniciar_sala_atual()
@@ -129,10 +135,14 @@ func _rodar() -> void:
 		await ir(a)
 		await matar_inimigos()
 	checar(a.estado == 2, "A: puzzle ativo depois do combate")
-	var est: Array[Node] = a.get_node("Puzzle").filhos_no_grupo("estatua")
+	checar(Som.faixa_atual() == "enigma", "música de enigma depois do combate")
+	var pz_a := a.get_node("Puzzle")
+	var est: Array[Node] = pz_a.filhos_no_grupo("estatua")
+	var sx := Vector3(-1, 1, 1) if pz_a.espelhado else Vector3.ONE
+	print("  (estátuas %s)" % ("espelhadas" if pz_a.espelhado else "normais"))
 	for mv in [[0, Vector3.RIGHT], [0, Vector3.RIGHT], [1, Vector3.LEFT], [1, Vector3.LEFT],
 			[2, Vector3.RIGHT], [2, Vector3.RIGHT], [2, Vector3.BACK]]:
-		est[mv[0]].empurrar(mv[1])
+		est[mv[0]].empurrar(mv[1] * sx)
 		await esperar(0.35)
 	await esperar(1.8)
 	checar(a.esta_concluida() and jogo.prisioneiros_libertados == 4, "A resolvida, 4 libertados")
@@ -183,19 +193,26 @@ func _rodar() -> void:
 	await ir(c)
 	await matar_inimigos()
 	var br := {}
-	for x in c.get_node("Puzzle").filhos_no_grupo("braseiro"):
+	var pz_c := c.get_node("Puzzle")
+	for x in pz_c.filhos_no_grupo("braseiro"):
 		br[x.simbolo] = x
-	br["lua"].interagir(teseu)
+	var ordem: Array = pz_c.ordem
+	print("  (ordem sorteada: %s)" % str(ordem))
+	var ord_s := ordem.duplicate()
+	ord_s.sort()
+	checar(br.size() == 4 and ord_s == ["lua", "onda", "raio", "sol"], "braseiros: 4 símbolos e a ordem é uma permutação deles")
+	checar(ordem != ["sol", "lua", "onda", "raio"], "braseiros: ordem sorteada diferente da original")
+	br[ordem[1]].interagir(teseu)
 	await esperar(0.5)
 	checar(inimigos().size() == 1, "errar a ordem chama reforço")
 	await matar_inimigos()
-	for simb in ["sol", "lua", "onda"]:
+	for simb in ordem.slice(0, 3):
 		br[simb].interagir(teseu)
 		await esperar(0.2)
 	jogo.mensagem.emit("Acenda os braseiros na ordem do mosaico.", 3.0)
 	await esperar(1.0)
 	await foto("05_C_braseiros")
-	br["raio"].interagir(teseu)
+	br[ordem[3]].interagir(teseu)
 	await esperar(1.8)
 	checar(c.esta_concluida() and jogo.prisioneiros_libertados == 8, "C resolvida, 8 libertados")
 	checar_sorteio(c, "C")
@@ -205,9 +222,14 @@ func _rodar() -> void:
 	var e := sala("E")
 	await ir(e)
 	await matar_inimigos()
-	for nome in {"Espelho1": 2, "Espelho2": 1, "Espelho3": 3}:
+	var cliques := []
+	for nome in ["Espelho1", "Espelho2", "Espelho3"]:
+		cliques.append(e.find_child(nome, true, false).cliques_ate_solucao())
+	print("  (cliques sorteados: %s)" % str(cliques))
+	checar(not (0 in cliques), "espelhos: nenhum começa na posição da solução")
+	for nome in ["Espelho1", "Espelho2", "Espelho3"]:
 		var esp := e.find_child(nome, true, false)
-		for k in {"Espelho1": 2, "Espelho2": 1, "Espelho3": 3}[nome]:
+		for k in esp.cliques_ate_solucao():
 			esp.interagir(teseu)
 			await esperar(0.35)
 	await esperar(0.4)
@@ -236,6 +258,7 @@ func _rodar() -> void:
 		teseu.levar_dano(0, Vector3(0, 0, -1))
 		await esperar(0.25)
 	checar(f.contem(teseu.global_position) and f.estado == 1, "empurrão não atravessa a grade nem teleporta")
+	await _combate_novo(f)
 	await matar_inimigos()
 	await esperar(0.3)
 	var nov2: int = jogo.novelo
@@ -277,9 +300,148 @@ func _rodar() -> void:
 		var arena := fase.find_child("Arena", true, false)
 		checar(arena.contem(teseu.global_position), "portal leva à arena")
 		await _luta_chefe(arena)
+	await _abertura_e_game_over()
 	print("== RESULTADO: %d falha(s) ==" % falhas)
 	quit(falhas)
 
+
+
+# ------------------------------------------------------------------ escudo, arremessador, partículas
+func _combate_novo(f: Node) -> void:
+	print("== Escudo e arremessador ==")
+	var arr := inimigos().filter(func(n): return n is MinitaurinhoArremessador)
+	checar(arr.size() >= 2, "Antecâmara tem minitaurinhos arremessadores (%d)" % arr.size())
+	for i in inimigos():
+		i.set_physics_process(false)  # congela para o teste ficar previsível
+	teseu.global_position = f.global_position + Vector3(0, 0.1, 1.0)
+	teseu.vida = 10
+	teseu._direcao_olhar = Vector3.FORWARD  # olhando para -Z
+	Input.action_press("defender")
+	await esperar(0.15)
+	checar(teseu.defendendo, "segurar Shift ergue o escudo")
+	teseu._invulneravel = 0.0
+	teseu.levar_dano(1, Vector3.BACK)        # golpe vindo da frente (-Z)
+	checar(teseu.vida == 10, "escudo bloqueia golpe de frente (vida=%d)" % teseu.vida)
+	teseu._invulneravel = 0.0
+	teseu.levar_dano(3, Vector3.BACK)
+	checar(teseu.vida == 9, "escudo reduz pela metade o golpe forte (vida=%d)" % teseu.vida)
+	teseu._invulneravel = 0.0
+	teseu.levar_dano(1, Vector3.FORWARD)     # golpe vindo de trás
+	checar(teseu.vida == 8, "golpe pelas costas passa pelo escudo (vida=%d)" % teseu.vida)
+	# pedra vindo da frente com o escudo: quebra sem dano
+	teseu._invulneravel = 0.0
+	var vida0: int = teseu.vida
+	var pedra := PedraArremessada.new()
+	f.add_child(pedra)
+	pedra.global_position = teseu.global_position + Vector3(0, 1.1, -4.0)
+	pedra.lancar(Vector3.BACK, 7.5)
+	await esperar(0.8)
+	checar(not is_instance_valid(pedra) and teseu.vida == vida0, "escudo bloqueia a pedra (vida=%d)" % teseu.vida)
+	Input.action_release("defender")
+	await esperar(0.1)
+	checar(not teseu.defendendo, "soltar Shift abaixa o escudo")
+	# pedra sem escudo: acerta
+	teseu._invulneravel = 0.0
+	var pedra2 := PedraArremessada.new()
+	f.add_child(pedra2)
+	pedra2.global_position = teseu.global_position + Vector3(0, 1.1, -4.0)
+	pedra2.lancar(Vector3.BACK, 7.5)
+	await esperar(0.8)
+	checar(teseu.vida == vida0 - 1, "pedra sem escudo tira meio coração (vida=%d)" % teseu.vida)
+	# espada quebra a pedra
+	var pedra3 := PedraArremessada.new()
+	f.add_child(pedra3)
+	pedra3.global_position = teseu.global_position + Vector3(0, 1.1, -1.2)
+	pedra3.lancar(Vector3.BACK, 0.5)
+	await esperar(0.05)
+	teseu._cooldown_ataque = 0.0
+	teseu._atacar()
+	await esperar(0.05)
+	checar(not is_instance_valid(pedra3) or pedra3.is_queued_for_deletion(), "a espada quebra a pedra")
+	# o arremessador mira e arremessa de verdade
+	var a0: Node3D = arr[0]
+	a0.set_physics_process(true)
+	a0.global_position = f.global_position + Vector3(0, 0.1, -3.5)
+	teseu.global_position = f.global_position + Vector3(0, 0.1, 2.0)
+	a0._cooldown = 0.0
+	a0._espera = 0.0
+	var viu_pedra := false
+	for k in 25:
+		await esperar(0.1)
+		if not get_nodes_in_group("projetil").is_empty():
+			viu_pedra = true
+			break
+	checar(viu_pedra, "o arremessador ergue a pedra e arremessa")
+	await foto("14_arremessador")
+	# partículas: faíscas, fumaça
+	teseu._invulneravel = 99.0
+	for i in get_nodes_in_group("inimigo"):
+		i.levar_dano(99)
+	await esperar(0.1)
+	var particulas := root.find_children("*", "CPUParticles3D", true, false).size()
+	checar(particulas > 0, "partículas na tela (%d emissores)" % particulas)
+	teseu._invulneravel = 0.0
+	teseu.vida = 10
+
+
+# ------------------------------------------------------------------ tela de título
+func _tela_titulo() -> void:
+	print("== Tela de título ==")
+	var t := (load("res://cenas/titulo.tscn") as PackedScene).instantiate()
+	root.add_child(t)
+	await esperar(1.5)
+	var col := t.get_node("UI/Principal/Caixa/Coluna")
+	checar(col.get_node("Jogar") is Button and col.get_node("Creditos") is Button and col.get_node("Sair") is Button,
+		"título tem Jogar / Créditos / Sair")
+	checar(Som.faixa_atual() == "titulo", "música do título tocando")
+	await foto("00_titulo")
+	t._abrir("creditos")
+	await esperar(0.3)
+	checar(t.get_node("UI/Creditos").visible and not t.get_node("UI/Principal").visible, "créditos abrem")
+	await foto("00b_creditos")
+	t._voltar()
+	var q0 := Config.qualidade
+	t._trocar_qualidade()
+	checar(Config.qualidade != q0, "opção de qualidade troca (%s -> %s)" % [q0, Config.qualidade])
+	checar(t.get_node("TiltShift").visible == (Config.qualidade == "alta"), "qualidade baixa desliga o tilt-shift")
+	if Config.qualidade == "baixa":
+		await foto("00c_titulo_qualidade_baixa")
+	t._trocar_qualidade()
+	t._voltar()
+	t.queue_free()
+	await esperar(0.3)
+
+
+# ------------------------------------------------------------------ abertura e game over
+func _abertura_e_game_over() -> void:
+	print("== Abertura (Ariadne) e game over ==")
+	fase.queue_free()
+	await esperar(0.5)
+	Config.mostrar_abertura = true
+	fase = (load("res://cenas/fase_principal.tscn") as PackedScene).instantiate()
+	root.add_child(fase)
+	await esperar(2.5)
+	jogo = get_first_node_in_group("jogo")
+	teseu = get_first_node_in_group("jogador")
+	checar(jogo.em_cinematica, "a partida começa com a cena da Ariadne")
+	checar(fase.get_node("HUD/FaixaCima").visible, "faixas de cinema aparecem")
+	checar(not teseu._controle_ativo, "Teseu fica parado durante a cena")
+	checar(fase.get_node("HUD/Dialogo/Coluna/Nome").visible, "caixa de fala mostra quem fala")
+	await foto("15_abertura_ariadne")
+	jogo._pular = true
+	await esperar(1.0)
+	checar(not jogo.em_cinematica and teseu._controle_ativo, "Esc pula a cena e devolve o controle")
+	checar(teseu.get_node("Visual/Novelo").scale.x > 0.9, "o novelo está na cabeça do Teseu")
+	Config.mostrar_abertura = false
+	# game over: sem novelo e morre
+	jogo.novelo = 0
+	teseu._invulneravel = 0.0
+	teseu.vida = 1
+	teseu.levar_dano(1)
+	await esperar(2.5)
+	checar(fase.get_node("HUD/GameOver").visible, "novelo acabou -> tela de GAME OVER")
+	checar(jogo.terminou and Som.faixa_atual() == "", "game over para a música e trava o jogo")
+	await foto("16_game_over")
 
 
 # ------------------------------------------------------------------ chefe
@@ -290,6 +452,9 @@ func _luta_chefe(arena: Node) -> void:
 	checar(chefe != null, "o Minotauro está na arena")
 	checar(chefe.estado == 1, "a luta começa com o rugido (intro)")
 	checar(hud.chefe_ativo and hud.chefe_maximo == chefe.vida_maxima, "barra de vida do chefe aparece")
+	checar(Som.faixa_atual() == "chefe", "música do chefe")
+	var mat_tilt: ShaderMaterial = fase.find_child("Filtro", true, false).material
+	checar(float(mat_tilt.get_shader_parameter("desfoque_max")) < 0.6, "tilt-shift mais leve na arena (%.2f)" % float(mat_tilt.get_shader_parameter("desfoque_max")))
 	await esperar(0.8)
 	await foto("09_arena_intro")
 	await esperar(1.4)

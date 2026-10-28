@@ -29,6 +29,7 @@ func iniciar() -> void:
 		jogo.sala_atual = self
 		jogo.chefe_apareceu.emit(_chefe)
 		jogo.mensagem.emit("O MINOTAURO!\nCuidado com a investida: faça ele bater nas colunas!", 3.5)
+	Som.musica("chefe", 0.6)
 	if _chefe:
 		_chefe.resetar()
 		_chefe.comecar()

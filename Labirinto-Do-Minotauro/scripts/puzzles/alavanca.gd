@@ -16,6 +16,7 @@ func _ready() -> void:
 
 func interagir(_quem: Node) -> void:
 	_ligada = not _ligada
+	Som.tocar("alavanca")
 	if _haste:
 		var alvo := deg_to_rad(30.0 if _ligada else -30.0)
 		create_tween().tween_property(_haste, "rotation:x", alvo, 0.2).set_trans(Tween.TRANS_BACK)

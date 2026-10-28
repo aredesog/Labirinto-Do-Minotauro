@@ -4,15 +4,10 @@ Feito para **Godot 4.7** no renderizador **Compatibilidade**.
 
 ## Como instalar
 
-**Projeto separado** (`labirinto_projeto_completo.zip`): extraia, clique em
-**Importar** no Godot, escolha o `project.godot` e aperte **F5**.
-
-**Juntar com o projeto do grupo** (`labirinto_puzzles.zip`):
-1. Feche o Godot.
-2. Apague as pastas `cenas/` e `scripts/` das versões anteriores, porque
-   arquivos foram renomeados ou removidos.
-3. Copie `assets/`, `cenas/`, `scripts/` e `ferramentas/` para a pasta do projeto.
-4. Abra `cenas/fase_principal.tscn` e aperte **F6**.
+Extraia o zip, clique em **Importar** no Godot, escolha o `project.godot` e
+aperte **F5**. A cena principal agora é a **tela de título**
+(`cenas/titulo.tscn`); para pular direto para o jogo, abra
+`cenas/fase_principal.tscn` e aperte **F6**.
 
 ## Controles
 
@@ -20,10 +15,11 @@ Feito para **Godot 4.7** no renderizador **Compatibilidade**.
 |---|---|
 | WASD / setas | andar |
 | Espaço / J | espada |
+| **Shift** / L (segurar) | escudo: bloqueia o que vem da frente |
 | E / K | usar (alavanca, braseiro, espelho) |
 | andar contra a estátua | empurrar (1 m por vez) |
 | **R** | reiniciar a sala atual |
-| **Esc** / P | menu: continuar, reiniciar sala, reiniciar jogo |
+| **Esc** / P | menu: continuar, reiniciar sala, reiniciar jogo, menu inicial (na cena da Ariadne: pula a cena) |
 
 ## Como o labirinto funciona
 
@@ -73,14 +69,57 @@ Para testar com sempre o mesmo sorteio, coloque um número em `semente` no nó
 Tudo é desenhado por código em `scripts/ui/hud_desenho.gd`, sem imagens. Os
 corações saem da curva paramétrica do coração.
 
-## Puzzles
+## Puzzles (mudam a cada partida)
 
 - **Estátuas:** empurre as 3 estátuas até as placas douradas. A alavanca
-  devolve tudo ao lugar.
+  devolve tudo ao lugar. Em metade das partidas o enigma aparece **espelhado**.
 - **Braseiros:** cada símbolo tem uma cor. Acenda na ordem do mosaico; errar
-  chama um reforço.
+  chama um reforço. A **ordem do mosaico** e **qual braseiro tem qual símbolo**
+  são sorteadas (`sortear` no nó Puzzle; desligue para usar a ordem fixa).
 - **Espelhos:** gire os 3 espelhos até a luz chegar ao cristal (raycast +
-  reflexão `r = d − 2(d·n)n`).
+  reflexão `r = d − 2(d·n)n`). Cada espelho **começa num ângulo sorteado**
+  (nunca já na solução). O ângulo certo fica em `angulo_solucao` de cada espelho.
+
+## Combate
+
+- **Escudo (Shift):** Teseu anda mais devagar e não ataca, mas bloqueia golpes
+  e pedras **de frente**. Minitaurinho e pedra: sem dano. Minotauro: metade.
+- **Minitaurinho arremessador** (pelo cinza, faixa vermelha): fica longe, ergue a
+  pedra acima da cabeça (aviso) e arremessa. A espada quebra a pedra no ar.
+  Quantos aparecem por sala: tabela `ARREMESSADORES` em `gerar_cenas.gd`
+  (Salão dos Chifres 1, Cova 1, Espelhos 1, Antecâmara 2; +1 a cada 2 revisitas).
+- **Partículas** (`scripts/visual/efeitos.gd`): faíscas, poeira, fumaça, estilhaços.
+
+## Som e música
+
+`Som.tocar("nome")` e `Som.musica("faixa")` funcionam de qualquer script, sem
+Autoload. Efeitos em `assets/audio/sfx/`, músicas em `assets/audio/musica/`:
+
+| Música | Quando toca |
+|---|---|
+| `titulo` | tela de título e depois da vitória |
+| `exploracao` | entrada e salas vencidas |
+| `combate` | enquanto há minitaurinhos na sala |
+| `enigma` | enigma liberado depois do combate |
+| `chefe` | arena do Minotauro |
+
+Para trocar um som por outro, basta substituir o arquivo mantendo o nome.
+Para gerar tudo de novo: `python3 ferramentas/audio/gerar_sons.py`.
+
+## Telas
+
+- **Título:** Jogar, Como jogar, Opções (qualidade ALTA/BAIXA e volumes, salvos em
+  `user://config.cfg`), Créditos (edite o texto em `scripts/ui/titulo.gd`) e Sair.
+- **Abertura:** a Ariadne fala com o Teseu e o novelo voa até a cabeça dele.
+  Espaço/E avança as falas, Esc pula. Só aparece ao vir do título.
+- **Game over:** quando o novelo acaba. Tentar de novo ou voltar ao título.
+
+## Desempenho (GPU integrada, ex.: Radeon 610M)
+
+A qualidade **BAIXA** (Opções) desliga a luz dinâmica das tochas, o tilt-shift
+e o MSAA, usa sombra mais simples e renderiza o 3D em 85% da resolução. Na
+primeira vez que o jogo abre numa GPU integrada, ele já começa em BAIXA.
+O tilt-shift foi otimizado (9 amostras em vez de 25) e é mais leve na arena.
 
 ## Pontos de Computação Gráfica para a apresentação
 
@@ -124,5 +163,6 @@ sem precisar de esqueleto.
   Para regenerar (**sobrescreve `cenas/`**, e precisa ser sem `--headless`):
   `godot --path . --script res://ferramentas/godot/gerar_cenas.gd`
 - **Modelos:** `blender --background --python ferramentas/blender/modelos.py`
-- **Teste automático** (84 verificações, incluindo a luta do chefe):
+- **Teste automático** (mais de 110 verificações, incluindo título, escudo,
+  arremessador, abertura, game over e a luta do chefe):
   `godot --path . --script res://ferramentas/godot/teste_automatico.gd`

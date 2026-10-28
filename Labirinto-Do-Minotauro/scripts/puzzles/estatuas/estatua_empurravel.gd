@@ -27,6 +27,8 @@ func empurrar(direcao: Vector3) -> void:
 		_tremer(direcao)
 		return
 	_movendo = true
+	Som.tocar("arrastar")
+	Efeitos.poeira(global_position, 4, 0.35)
 	var tw := create_tween()
 	tw.tween_property(self, "global_position", destino, duracao) \
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)

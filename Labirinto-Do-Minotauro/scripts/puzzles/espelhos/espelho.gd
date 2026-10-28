@@ -6,6 +6,8 @@ extends StaticBody3D
 signal girou
 
 @export var passo_graus: float = 45.0
+## Ângulo (graus, em Y) em que este espelho fica na solução do enigma.
+@export var angulo_solucao: float = 0.0
 var habilitado := false
 var rotacao_inicial: float
 var _girando := false
@@ -21,6 +23,7 @@ func interagir(_quem: Node) -> void:
 	if not habilitado or _girando:
 		return
 	_girando = true
+	Som.tocar("girar")
 	var tw := create_tween()
 	tw.tween_property(self, "rotation:y", rotation.y + deg_to_rad(passo_graus), 0.25) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -41,6 +44,17 @@ func refletir(direcao: Vector3) -> Vector3:
 	if direcao.dot(n) >= 0.0:
 		return Vector3.ZERO
 	return (direcao - 2.0 * direcao.dot(n) * n).normalized()
+
+
+## Quantos cliques (de 45°) faltam para chegar ao ângulo da solução.
+func cliques_ate_solucao() -> int:
+	var dif := fposmod(angulo_solucao - rad_to_deg(rotation.y), 360.0)
+	return int(round(dif / passo_graus)) % int(360.0 / passo_graus)
+
+
+func definir_cliques_ate_solucao(cliques: int) -> void:
+	rotation.y = deg_to_rad(angulo_solucao - cliques * passo_graus)
+	rotacao_inicial = rotation.y
 
 
 func voltar_ao_inicio() -> void:

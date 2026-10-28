@@ -4,7 +4,7 @@ Jogo 3D de ação e enigmas feito para a disciplina de **Computação Gráfica**
 (Ciência da Computação, UNIFAL-MG), com **Blender** e **Godot 4.7**.
 Visual de maquete de brinquedo, inspirado em *The Legend of Zelda: Link's Awakening* (remake).
 
-![Arena do Minotauro](docs/capturas/09_arena_intro.png)
+![Tela de título](docs/capturas/00_titulo.png)
 
 ## A história
 
@@ -20,10 +20,11 @@ presos resolvendo 3 enigmas e enfrenta o Minotauro.
 
 1. Instale o **Godot 4.7** (versão padrão).
 2. Clone o repositório e, no Godot, clique em **Importar** e escolha o `project.godot`.
-3. Espere a importação dos modelos e aperte **F5**.
+3. Espere a importação dos modelos e sons e aperte **F5** (abre a tela de título).
 
 O projeto usa o renderizador **Compatibilidade** (OpenGL 3), que roda em máquinas
-modestas e GPUs integradas.
+modestas e GPUs integradas. Em **Opções** dá para trocar a qualidade gráfica; em GPU
+integrada (ex.: Radeon 610M, Intel UHD) o jogo já começa na qualidade **baixa**.
 
 ## Controles
 
@@ -31,6 +32,7 @@ modestas e GPUs integradas.
 |---|---|
 | WASD / setas | andar |
 | Espaço / J | espada |
+| Shift / L (segurar) | escudo: bloqueia golpes e pedras que vêm da frente |
 | E / K | usar (alavanca, braseiro, espelho) |
 | andar contra a estátua | empurrar |
 | R | reiniciar a sala atual |
@@ -39,6 +41,16 @@ modestas e GPUs integradas.
 ---
 
 ## O que já temos
+
+### Telas e história
+- **Tela de título** com a arena em miniatura ao fundo: Jogar, Como jogar, Opções
+  (qualidade gráfica, volume de música e efeitos), Créditos e Sair.
+- **Cena de abertura:** Ariadne conversa com Teseu e o novelo voa até a cabeça dele
+  (faixas de cinema, falas com nome; Espaço avança, Esc pula).
+- **Game over** próprio quando o novelo acaba (tentar de novo ou menu inicial).
+- **Vitória** com resumo da partida.
+
+![Ariadne entrega o novelo](docs/capturas/15_abertura_ariadne.png)
 
 ### Estrutura do jogo
 - **Salas ligadas por portais:** não há corredores. Ao vencer uma sala, cada
@@ -56,6 +68,10 @@ modestas e GPUs integradas.
 | Sala dos Braseiros | acender braseiros na ordem do mosaico, cada símbolo com sua cor; errar chama reforço |
 | Sala dos Espelhos | girar espelhos para levar um feixe de luz até um cristal |
 
+**Os enigmas mudam a cada partida:** a ordem do mosaico e a posição dos símbolos nos
+braseiros são sorteadas, os espelhos começam em ângulos sorteados e a Sala das Estátuas
+pode aparecer espelhada (esquerda/direita).
+
 ![Sala dos Braseiros](docs/capturas/05_C_braseiros.png)
 
 ### Chefe: o Minotauro
@@ -67,6 +83,24 @@ Corpo de cavalo, tronco e cabeça de touro, machado duplo. Padrões com aviso vi
 
 ![Investida do Minotauro](docs/capturas/11_investida_mira.png)
 
+### Combate
+- **Escudo hoplon funcional:** segurando Shift, Teseu anda devagar e bloqueia o que vem
+  da frente (minitaurinho e pedra: sem dano; Minotauro: metade). Pelas costas não protege.
+- **Dois tipos de inimigo:** minitaurinho de corpo a corpo e o **arremessador**, que
+  foge de perto, ergue a pedra (aviso) e arremessa. A espada quebra a pedra no ar.
+- **Partículas:** faíscas na espada e no escudo, poeira dos cascos e da investida do
+  Minotauro, fumaça quando um minitaurinho some, estilhaços de pedra.
+
+![Minitaurinho arremessador](docs/capturas/14_arremessador.png)
+
+### Som
+- Efeitos para espada, acerto, dano, passos, escudo, portal, grade, braseiro, erro,
+  enigma resolvido, rugido, cascos e golpes do Minotauro, menus e diálogos.
+- **Músicas por tipo de sala:** título, exploração, enigma, combate e chefe (loops,
+  com fade cruzado), mais os temas de vitória e game over.
+- Tudo **sintetizado por código** (`ferramentas/audio/gerar_sons.py`): osciladores,
+  ruído filtrado, envelopes e corda dedilhada Karplus-Strong para a lira grega.
+
 ### Sistemas
 - **Novelo de Ariadne:** 3 voltas (respawns). Ele fica na cabeça do Teseu e encolhe a cada morte.
 - **HUD estilo Link's Awakening:** corações com meio coração, novelos, botões
@@ -74,6 +108,9 @@ Corpo de cavalo, tronco e cabeça de touro, machado duplo. Padrões com aviso vi
 - Reiniciar a sala (R), menu de pausa e reiniciar o jogo.
 - Colisão robusta: empurrão por física, paredes grossas, chão infinito e resgate se cair do mapa.
 - **Câmera de diorama:** travada no centro de cada sala e com zoom maior na arena.
+- **Desempenho:** tilt-shift otimizado (9 amostras em vez de 25, e nenhuma na faixa nítida)
+  e mais leve na arena; qualidade **baixa** desliga a luz dinâmica das tochas, o
+  tilt-shift e o MSAA, simplifica a sombra e renderiza em 85% da resolução.
 
 ### Arte (Blender, gerada por script Python)
 Kit modular do cenário (piso, paredes, pilares, arco, grades, tochas, portão),
@@ -88,6 +125,8 @@ props (colunas gregas, ânforas, ossos), objetos dos enigmas, prisioneiros,
 | Raycast + reflexão especular `r = d − 2(d·n)n` | `scripts/puzzles/espelhos/fonte_luz.gd` |
 | Shader de portal (espiral em coordenadas polares) | `scripts/visual/portal.gdshader` |
 | Pós-processamento tilt-shift (efeito miniatura) | `scripts/visual/tilt_shift.gdshader` |
+| Sistemas de partículas (CPUParticles3D, billboards) | `scripts/visual/efeitos.gd` |
+| Síntese sonora (Karplus-Strong, filtros IIR, convolução para reverb) | `ferramentas/audio/gerar_sons.py` |
 | Animação procedural por pivôs (sem esqueleto) | `scripts/inimigos/minotauro.gd` |
 | Coração por curva paramétrica no HUD | `scripts/ui/hud_desenho.gd` |
 | Malha gerada em código (rastro da espada) | `scripts/jogador/teseu_prototipo.gd` |
@@ -96,9 +135,11 @@ props (colunas gregas, ânforas, ossos), objetos dos enigmas, prisioneiros,
 
 ### Ferramentas
 - `ferramentas/blender/modelos.py`: gera todos os modelos (`.glb` + `.blend`).
+- `ferramentas/audio/gerar_sons.py`: gera todos os efeitos (`.wav`) e músicas (`.ogg`).
 - `ferramentas/godot/gerar_cenas.gd`: monta todas as cenas a partir dos modelos.
-- `ferramentas/godot/teste_automatico.gd`: joga o jogo sozinho e confere **84 regras**
-  (salas, enigmas, sorteio dos portais, colisão, morte e luta do chefe).
+- `ferramentas/godot/teste_automatico.gd`: joga o jogo sozinho e confere **mais de 110
+  regras** (título, salas, enigmas sorteados, portais, escudo, arremessador, colisão,
+  música, morte, abertura, game over e luta do chefe).
 
 ```bash
 godot --path . --script res://ferramentas/godot/teste_automatico.gd
@@ -111,27 +152,29 @@ godot --path . --script res://ferramentas/godot/teste_automatico.gd
 ### Prioridade alta
 - [ ] **Modelo final do Teseu**, com rig e animações (andar, atacar, dano, morte).
   Hoje ele usa o corpo do NPC prisioneiro.
-- [ ] **Modelo final do minitaurinho** (hoje é feito de formas primitivas no Godot).
-- [ ] **Som e música:** passos, espada, rugido, portal, trilha das salas e do chefe.
-- [ ] **Tela inicial**, com título, "Jogar" e créditos.
-- [ ] **Tela de game over** própria, quando o novelo acaba (hoje o jogo só recomeça).
+- [ ] **Modelo final do minitaurinho** e do arremessador (hoje são formas primitivas no Godot).
+- [x] Som e música · [x] Tela inicial · [x] Game over · [x] Cena da Ariadne
 
 ### Jogabilidade
 - [ ] Mais variedade nas salas de combate (layouts, armadilhas, obstáculos).
-- [ ] Novo tipo de inimigo (ex.: minitaurinho que arremessa pedras).
-- [ ] Itens: coração extra, novelo extra escondido, escudo que bloqueia de verdade.
+- [x] Novo tipo de inimigo (arremessador) · [x] Escudo que bloqueia · [x] Enigmas sorteados
+- [ ] Itens: coração extra, novelo extra escondido.
 - [ ] Balanceamento: vida, dano e velocidade do Minotauro e dos minitaurinhos.
-- [ ] Cena de Ariadne no começo e saída do labirinto no final.
+- [ ] Cena final: saída do labirinto com os atenienses seguindo o fio.
+- [ ] Mais enigmas (novos tipos de sala, não só variações).
 
 ### Visual
-- [ ] Partículas: poeira na investida, faíscas na espada, fumaça nas tochas.
+- [x] Partículas (faíscas, poeira, fumaça, estilhaços)
 - [ ] Animação de entrada e saída nos portais.
+- [ ] Trocar os sons sintetizados por gravações/composições do grupo (é só substituir os
+  arquivos em `assets/audio/` mantendo os nomes).
 - [ ] Mais variação de props e texturas por sala.
 - [ ] Teste do renderizador Avançado+ em máquinas com Vulkan (sombras e luz melhores).
 
 ### Técnico
 - [ ] Rodar o teste automático no **GitHub Actions** a cada push.
 - [ ] Suporte a controle (gamepad).
+- [ ] Opções de volume e qualidade também no menu de pausa.
 - [ ] Exportar para Windows, Linux e Web.
 - [ ] Salvar o progresso.
 
@@ -142,8 +185,10 @@ godot --path . --script res://ferramentas/godot/teste_automatico.gd
 ```
 assets/modelos/      modelos .glb (cenário, props, puzzles, personagens, armas)
 assets/modelos/fontes/  arquivos .blend (ignorados pelo Godot)
+assets/audio/        efeitos (.wav) e músicas (.ogg)
 cenas/objetos/       objetos prontos (com script e colisão)
 cenas/salas/         as 6 salas
+cenas/titulo.tscn    tela de título (cena principal)
 cenas/fase_principal.tscn
 scripts/             lógica do jogo (GDScript)
 ferramentas/         geradores de modelos e cenas + teste automático

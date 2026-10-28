@@ -58,6 +58,12 @@ func _physics_process(delta: float) -> void:
 	if _visual and dir != Vector3.ZERO:
 		_visual.rotation.y = lerp_angle(_visual.rotation.y, atan2(dir.x, dir.z), 10.0 * delta)
 
+	_comportamento(dir, distancia, delta)
+	move_and_slide()
+
+
+## Corpo a corpo: corre até o Teseu e dá cabeçada. (O arremessador sobrescreve.)
+func _comportamento(dir: Vector3, distancia: float, _delta: float) -> void:
 	if distancia > distancia_ataque * 0.85:
 		velocity.x = dir.x * velocidade
 		velocity.z = dir.z * velocidade
@@ -66,11 +72,11 @@ func _physics_process(delta: float) -> void:
 		velocity.z = 0
 		if _cooldown <= 0.0:
 			_atacar(dir)
-	move_and_slide()
 
 
 func _atacar(dir: Vector3) -> void:
 	_cooldown = intervalo_ataque
+	Som.tocar("grunhido", 0.0, 0.15)
 	if _visual:
 		var tw := create_tween()
 		tw.tween_property(_visual, "position", dir * 0.35, 0.08)
@@ -84,6 +90,7 @@ func levar_dano(quantidade: int, direcao: Vector3 = Vector3.ZERO) -> void:
 		return
 	vida -= quantidade
 	_atordoado = 0.35
+	Som.tocar("acerto")
 	velocity = direcao.normalized() * 6.0
 	if _visual:
 		var tw := create_tween()
@@ -98,6 +105,8 @@ func _morrer() -> void:
 	remove_from_group("inimigo")
 	collision_layer = 0
 	morreu.emit(self)
+	Som.tocar("puf")
+	Efeitos.fumaca(global_position)
 	var tw := create_tween()
 	if _visual:
 		tw.tween_property(_visual, "scale", Vector3.ONE * 0.01, 0.3).set_trans(Tween.TRANS_BACK) \

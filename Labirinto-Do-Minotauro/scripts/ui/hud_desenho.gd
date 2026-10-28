@@ -2,7 +2,8 @@ extends Control
 ## Desenho do HUD no estilo Zelda: Link's Awakening (tudo vetorial, sem imagens).
 ##  - corações com meio coração (canto superior esquerdo), piscando com vida baixa;
 ##  - novelos de Ariadne logo abaixo (cinza quando gastos);
-##  - botões de item redondos (canto superior direito): espada [Espaço] e ação [E];
+##  - botões de item redondos (canto superior direito): espada [Espaço], ação [E]
+##    e escudo [Shift] (acende enquanto o escudo está erguido);
 ##  - 3 "instrumentos" = enigmas resolvidos, abaixo dos botões;
 ##  - contador de atenienses no canto inferior direito, como as rúpias.
 
@@ -32,6 +33,7 @@ var _pulo_contador := 0.0
 var _pulo_enigma := 0.0
 var _contador_mostrado := 0.0
 var _fonte: Font
+var _jogador: Node
 
 
 func _ready() -> void:
@@ -46,6 +48,8 @@ func _process(delta: float) -> void:
 	_pulo_enigma = max(_pulo_enigma - delta * 1.5, 0.0)
 	_contador_mostrado = move_toward(_contador_mostrado, atenienses, delta * 8.0)
 	_chefe_mostrado = move_toward(_chefe_mostrado, chefe_vida, delta * 12.0)
+	if _jogador == null or not is_instance_valid(_jogador):
+		_jogador = get_tree().get_first_node_in_group("jogador")
 	queue_redraw()
 
 
@@ -146,10 +150,10 @@ func _desenhar_novelos(origem: Vector2) -> void:
 			draw_circle(c + Vector2(-4, -5), 2.5, Color(1, 1, 1, 0.5))
 
 
-func _botao(c: Vector2, tecla: String) -> void:
+func _botao(c: Vector2, tecla: String, aceso := false) -> void:
 	draw_circle(c, 31.0, CONTORNO)
-	draw_circle(c, 28.0, Color("#1e2a4a"))
-	draw_arc(c, 28.0, 0, TAU, 40, Color("#8aa0d8"), 2.5)
+	draw_circle(c, 28.0, Color("#3a4f86") if aceso else Color("#1e2a4a"))
+	draw_arc(c, 28.0, 0, TAU, 40, OURO if aceso else Color("#8aa0d8"), 3.5 if aceso else 2.5)
 	var largura := _fonte.get_string_size(tecla, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x + 12
 	var pos := c + Vector2(-largura / 2.0, 24)
 	draw_rect(Rect2(pos, Vector2(largura, 20)), CONTORNO)
@@ -175,6 +179,15 @@ func _desenhar_itens(c_espada: Vector2) -> void:
 		var r := 14.0 if i % 2 == 0 else 6.0
 		estrela.append(c + Vector2(cos(a), sin(a)) * r)
 	draw_colored_polygon(estrela, OURO)
+	# botão do escudo [Shift]: hoplon redondo com o "lambda" de bronze
+	var ce := c_espada + Vector2(-156, 0)
+	var erguido: bool = _jogador != null and bool(_jogador.get("defendendo"))
+	_botao(ce, "Shift", erguido)
+	var r_esc := 15.0 * (1.12 if erguido else 1.0)
+	draw_circle(ce, r_esc + 2.0, CONTORNO)
+	draw_circle(ce, r_esc, Color("#c98a3a"))
+	draw_circle(ce, r_esc * 0.72, Color("#b8342c"))
+	draw_polyline(PackedVector2Array([ce + Vector2(-6, 7), ce + Vector2(0, -7), ce + Vector2(6, 7)]), OURO, 2.5)
 
 
 func _desenhar_enigmas(origem: Vector2) -> void:

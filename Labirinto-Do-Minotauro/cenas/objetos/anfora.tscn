@@ -6,11 +6,11 @@
 height = 0.95
 radius = 0.3
 
-[node name="Anfora" type="StaticBody3D" unique_id=1828968091]
+[node name="Anfora" type="StaticBody3D" unique_id=1484189561]
 collision_mask = 0
 
 [node name="Modelo" type="Node3D" parent="." unique_id=808612740 instance=ExtResource("1_3esiy")]
 
-[node name="Forma" type="CollisionShape3D" parent="." unique_id=1735035176]
+[node name="Forma" type="CollisionShape3D" parent="." unique_id=1808908772]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.47, 0)
 shape = SubResource("CylinderShape3D_g2pcr")

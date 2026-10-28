@@ -46,6 +46,7 @@ func abrir() -> int:
 	aberta = true
 	if _bloqueio:
 		_bloqueio.set_deferred("disabled", true)
+	Som.tocar("grade", 2.0, 0.0, 0.8)
 	if _grade:
 		var tw := create_tween()
 		tw.tween_property(_grade, "position:y", -1.8, 0.9).set_trans(Tween.TRANS_SINE)

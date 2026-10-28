@@ -23,6 +23,8 @@ signal titulo_sala(texto: String)
 signal transicao(escurecer: bool)
 signal chefe_apareceu(chefe: Node)
 signal fim_de_jogo(vitoria: bool)
+## Liga/desliga as faixas pretas de cinema (cena da Ariadne).
+signal cinematica(ligada: bool)
 
 ## Comprimento do novelo de Ariadne = quantas vezes Teseu pode voltar.
 @export var novelo_inicial: int = 3
@@ -34,6 +36,10 @@ signal fim_de_jogo(vitoria: bool)
 @export_range(0.0, 1.0) var chance_enigma_extra: float = 0.3
 ## Semente do sorteio (0 = aleatório a cada partida).
 @export var semente: int = 0
+## Cena da tela de título (para o botão "Menu inicial").
+@export_file("*.tscn") var cena_titulo: String = "res://cenas/titulo.tscn"
+## Intensidade padrão do tilt-shift (cada sala multiplica pelo seu "tilt_shift").
+@export var desfoque_tilt: float = 1.6
 
 var novelo: int
 var prisioneiros_libertados: int = 0
@@ -42,7 +48,10 @@ var checkpoint: Vector3 = Vector3.ZERO
 var sala_atual: Node = null
 var area_atual: Node = null
 var teleportando := false
+var em_cinematica := false
+var terminou := false
 var _jogador: Node3D
+var _pular := false
 
 
 func _enter_tree() -> void:
@@ -57,6 +66,7 @@ func _ready() -> void:
 		randomize()
 	novelo = novelo_inicial
 	await get_tree().process_frame
+	Config.aplicar_qualidade(get_parent())
 	_jogador = get_tree().get_first_node_in_group("jogador")
 	if _jogador:
 		checkpoint = _jogador.global_position
@@ -65,37 +75,136 @@ func _ready() -> void:
 			area_atual = a
 			a.visitada = true
 			sortear_destinos(a)
-	await get_tree().create_timer(0.3).timeout
+			_aplicar_tilt(a)
+	Som.musica("exploracao", 1.5)
 	novelo_mudou.emit(novelo)
 	prisioneiros_mudou.emit(prisioneiros_libertados, total_prisioneiros)
 	puzzles_mudou.emit(0, puzzles_para_abrir_arena)
-	mensagem.emit("Ariadne te entrega um novelo de lã.\nOs portais levam a salas ao acaso: resolva os 3 enigmas e enfrente o Minotauro!", 5.0)
+	if Config.mostrar_abertura:
+		await _abertura()
+	else:
+		await get_tree().create_timer(0.3).timeout
+		mensagem.emit("Os portais levam a salas ao acaso: resolva os 3 enigmas e enfrente o Minotauro!", 4.0)
 
 
 func _unhandled_input(evento: InputEvent) -> void:
-	if evento.is_action_pressed("reiniciar_sala"):
+	if em_cinematica:
+		if evento.is_action_pressed("pausar"):
+			_pular = true
+			get_viewport().set_input_as_handled()
+		return
+	if evento.is_action_pressed("reiniciar_sala") and not terminou:
 		reiniciar_sala_atual()
 
 
 func _registrar_controles() -> void:
-	var mapa := {
-		"mover_cima": [KEY_W, KEY_UP],
-		"mover_baixo": [KEY_S, KEY_DOWN],
-		"mover_esquerda": [KEY_A, KEY_LEFT],
-		"mover_direita": [KEY_D, KEY_RIGHT],
-		"atacar": [KEY_SPACE, KEY_J],
-		"interagir": [KEY_E, KEY_K],
-		"reiniciar_sala": [KEY_R],
-		"pausar": [KEY_ESCAPE, KEY_P],
-	}
-	for acao in mapa:
-		if InputMap.has_action(acao):
-			continue
-		InputMap.add_action(acao)
-		for tecla in mapa[acao]:
-			var ev := InputEventKey.new()
-			ev.physical_keycode = tecla
-			InputMap.action_add_event(acao, ev)
+	Config.registrar_controles()
+
+
+# --------------------------------------------------------------------------
+# Abertura: Ariadne entrega o novelo (Esc pula)
+# --------------------------------------------------------------------------
+func _abertura() -> void:
+	var hud := get_tree().get_first_node_in_group("hud")
+	var ini: Node3D = area_atual
+	var ariadne := ini.find_child("Ariadne", true, false) as Node3D if ini else null
+	var cam := get_viewport().get_camera_3d()
+	if hud == null or ariadne == null or _jogador == null:
+		return
+	em_cinematica = true
+	_jogador.definir_controle(false)
+	# espera o HUD terminar de se conectar aos sinais
+	await get_tree().create_timer(0.4).timeout
+	_pular = false
+	_jogador.definir_controle(false)
+	var novelo_cabeca := _jogador.get_node_or_null("Visual/Novelo") as Node3D
+	var escala_novelo := novelo_cabeca.scale if novelo_cabeca else Vector3.ONE
+	if novelo_cabeca:
+		novelo_cabeca.scale = Vector3.ONE * 0.01
+	cinematica.emit(true)
+	if cam and cam.has_method("focar"):
+		cam.focar(ariadne.global_position.lerp(_jogador.global_position, 0.5), 0.55)
+	# Teseu olha para a Ariadne
+	var vis := _jogador.get_node_or_null("Visual") as Node3D
+	var para := ariadne.global_position - _jogador.global_position
+	if vis:
+		vis.rotation.y = atan2(para.x, para.z)
+	var falas := [
+		["Ariadne", "Teseu! Meu pai, o rei Minos, vai jogar vocês ao Minotauro."],
+		["Teseu", "Vim de Atenas para acabar com esse tributo. Os outros 13 jovens já estão lá dentro."],
+		["Ariadne", "O labirinto de Dédalo engana: cada porta é um portal para uma sala ao acaso."],
+		["Ariadne", "Leve este novelo. Se você cair, o fio te traz de volta... mas ele só dá 3 voltas."],
+	]
+	for f in falas:
+		await hud.falar(f[0], f[1])
+		if _pular:
+			break
+	# a Ariadne anda até o Teseu e o novelo voa para a cabeça dele
+	if not _pular:
+		var perto := _jogador.global_position + (ariadne.global_position - _jogador.global_position).normalized() * 1.1
+		perto.y = ariadne.global_position.y
+		var tw := create_tween()
+		tw.tween_property(ariadne, "global_position", perto, 0.7).set_trans(Tween.TRANS_SINE)
+		await tw.finished
+		await _novelo_voando(ariadne, novelo_cabeca, escala_novelo)
+		for f in [["Teseu", "Obrigado, Ariadne. Vou libertar os atenienses e voltar."],
+				["Ariadne", "Resolva os 3 enigmas para abrir o caminho até o Minotauro.\nE erga o escudo (Shift) contra as pedras!"]]:
+			if _pular:
+				break
+			await hud.falar(f[0], f[1])
+	if novelo_cabeca:
+		novelo_cabeca.scale = escala_novelo
+	hud.falar_fechar()
+	cinematica.emit(false)
+	if cam and cam.has_method("soltar"):
+		cam.soltar()
+	em_cinematica = false
+	_jogador.definir_controle(true)
+	titulo_sala.emit(area_atual.nome_sala if area_atual else "Labirinto")
+	mensagem.emit("Atravesse um portal. Espaço = espada · Shift = escudo · E = usar", 4.0)
+
+
+func _novelo_voando(ariadne: Node3D, alvo: Node3D, escala_final: Vector3) -> void:
+	if alvo == null:
+		return
+	Som.tocar("novelo")
+	var bola := MeshInstance3D.new()
+	var esfera := SphereMesh.new()
+	esfera.radius = 0.15
+	esfera.height = 0.3
+	bola.mesh = esfera
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color("#c0302a")
+	m.emission_enabled = true
+	m.emission = Color("#ff5a40")
+	m.emission_energy_multiplier = 0.6
+	bola.material_override = m
+	get_parent().add_child(bola)
+	var ini := ariadne.global_position + Vector3.UP * 1.0
+	bola.global_position = ini
+	var tw := create_tween()
+	tw.tween_method(func(k: float):
+		var fim := alvo.global_position
+		bola.global_position = ini.lerp(fim, k) + Vector3.UP * sin(k * PI) * 1.2
+		bola.rotation.x = k * 12.0, 0.0, 1.0, 0.9).set_trans(Tween.TRANS_SINE)
+	await tw.finished
+	bola.queue_free()
+	Efeitos.faisca(alvo.global_position, Color(1.0, 0.5, 0.4))
+	var tw2 := create_tween()
+	tw2.tween_property(alvo, "scale", escala_final * 1.4, 0.12)
+	tw2.tween_property(alvo, "scale", escala_final, 0.25).set_trans(Tween.TRANS_BACK)
+	await tw2.finished
+
+
+## Tilt-shift por sala: a arena usa menos desfoque para a luta ficar nítida.
+func _aplicar_tilt(area: Node) -> void:
+	var filtro := get_parent().find_child("Filtro", true, false) as CanvasItem
+	if filtro == null or not (filtro.material is ShaderMaterial):
+		return
+	var k: float = area.get("tilt_shift") if area and area.get("tilt_shift") != null else 1.0
+	var mat := filtro.material as ShaderMaterial
+	mat.set_shader_parameter("desfoque_max", desfoque_tilt * k)
+	mat.set_shader_parameter("largura_foco", lerpf(0.42, 0.34, clampf(k, 0.0, 1.0)))
 
 
 func _areas() -> Array[Node]:
@@ -149,6 +258,7 @@ func teleportar(destino: Node) -> void:
 	if teleportando or destino == null:
 		return
 	teleportando = true
+	Som.tocar("portal")
 	transicao.emit(true)
 	await get_tree().create_timer(0.35).timeout
 	# desliga os portais da sala de onde saiu (serão sorteados de novo depois)
@@ -165,6 +275,9 @@ func teleportar(destino: Node) -> void:
 	if cam and cam.has_method("encaixar"):
 		cam.encaixar()
 	titulo_sala.emit(destino.nome_sala)
+	_aplicar_tilt(destino)
+	if destino.tipo == "inicio":
+		Som.musica("exploracao")
 	destino.ao_chegar()
 	transicao.emit(false)
 	teleportando = false
@@ -225,7 +338,22 @@ func reiniciar_sala_atual() -> void:
 
 func reiniciar_jogo() -> void:
 	get_tree().paused = false
+	Som.musica("")
+	# a abertura só aparece na primeira vez
+	Config.mostrar_abertura = false
+	if get_tree().current_scene == null:
+		push_warning("reiniciar_jogo: sem current_scene (modo de teste)")
+		return
 	get_tree().reload_current_scene()
+
+
+func ir_para_titulo() -> void:
+	get_tree().paused = false
+	Config.mostrar_abertura = true
+	if ResourceLoader.exists(cena_titulo):
+		get_tree().change_scene_to_file(cena_titulo)
+	else:
+		reiniciar_jogo()
 
 
 # --------------------------------------------------------------------------
@@ -236,10 +364,11 @@ func jogador_morreu() -> void:
 	if sala and sala.has_method("reiniciar"):
 		sala.reiniciar()
 	if novelo <= 0:
-		mensagem.emit("O fio acabou...\nTeseu se perdeu no labirinto.", 4.0)
+		# tela de GAME OVER (hud.gd): tentar de novo ou voltar ao título
+		terminou = true
+		Som.musica("", 0.5)
+		Som.tocar("game_over")
 		fim_de_jogo.emit(false)
-		await get_tree().create_timer(4.0).timeout
-		reiniciar_jogo()
 		return
 	novelo -= 1
 	novelo_mudou.emit(novelo)
@@ -251,5 +380,10 @@ func jogador_morreu() -> void:
 
 
 func vitoria() -> void:
+	terminou = true
+	Som.tocar("vitoria")
+	if _jogador and _jogador.has_method("definir_controle"):
+		_jogador.definir_controle(false)
+	get_tree().create_timer(5.5).timeout.connect(func(): Som.musica("titulo", 2.0))
 	mensagem.emit("O Minotauro caiu! Teseu segue o fio de Ariadne de volta\ncom os atenienses. Atenas está livre do tributo!", 6.0)
 	fim_de_jogo.emit(true)

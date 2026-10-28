@@ -14,6 +14,9 @@ extends Camera3D
 
 var area_atual: Node = null
 var _tremor := 0.0
+## Cena de cinema: a câmera mira num ponto com zoom (null = segue o jogo).
+var _foco_fixo: Variant = null
+var _zoom_fixo := 1.0
 
 
 func _ready() -> void:
@@ -39,7 +42,20 @@ func _foco() -> Vector3:
 func _posicao_desejada() -> Vector3:
 	var foco := _foco()
 	var zoom: float = area_atual.zoom_camera if area_atual else 1.0
+	if _foco_fixo != null:
+		foco = _foco_fixo
+		zoom = _zoom_fixo
 	return foco + Vector3(0, altura, distancia) * zoom
+
+
+## Aproxima a câmera de um ponto (cenas de diálogo). zoom < 1 = mais perto.
+func focar(ponto: Vector3, zoom := 0.6) -> void:
+	_foco_fixo = ponto
+	_zoom_fixo = zoom
+
+
+func soltar() -> void:
+	_foco_fixo = null
 
 
 ## Chacoalha a câmera (golpes e investidas do Minotauro).

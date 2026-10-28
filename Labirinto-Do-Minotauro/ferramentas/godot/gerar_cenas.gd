@@ -33,6 +33,7 @@ func _initialize() -> void:
 	salvar(sala_espelhos(), SALAS + "sala_E_espelhos.tscn")
 	salvar(sala_combate("F"), SALAS + "sala_F_combate.tscn")
 	salvar(fase_principal(), "res://cenas/fase_principal.tscn")
+	salvar(tela_titulo(), "res://cenas/titulo.tscn")
 	print("CENAS GERADAS")
 	quit()
 
@@ -232,51 +233,12 @@ func gerar_objetos() -> void:
 			Vector3(60 * k, 30 * k, 90))
 	salvar(t, OBJ + "teseu_prototipo.tscn")
 
-	# --- Minitaurinho provisório ---
-	var m := CharacterBody3D.new()
-	m.name = "Minitaurinho"
-	m.set_script(load("res://scripts/inimigos/minitaurinho_prototipo.gd"))
-	m.collision_layer = CAMADA_INIMIGO
-	m.collision_mask = CAMADA_CENARIO | CAMADA_JOGADOR | CAMADA_INIMIGO
-	var cap2 := CollisionShape3D.new()
-	var cs2 := CapsuleShape3D.new()
-	cs2.radius = 0.32
-	cs2.height = 1.1
-	cap2.shape = cs2
-	cap2.position = Vector3(0, 0.55, 0)
-	add(m, cap2, m, "Forma")
-	var vm := n3d(m, m, "Visual")
-	var marrom := mat(Color("#a0704a"))
-	var corpo := SphereMesh.new()
-	corpo.radius = 0.3
-	corpo.height = 0.55
-	malha(vm, m, "Corpo", corpo, marrom, Vector3(0, 0.35, 0))
-	var tanga := CylinderMesh.new()
-	tanga.top_radius = 0.28
-	tanga.bottom_radius = 0.24
-	tanga.height = 0.14
-	malha(vm, m, "Tanga", tanga, mat(Color("#3f6fa8")), Vector3(0, 0.2, 0))
-	var cabeca := SphereMesh.new()
-	cabeca.radius = 0.32
-	cabeca.height = 0.6
-	malha(vm, m, "Cabeca", cabeca, marrom, Vector3(0, 0.85, 0))
-	var focinho := SphereMesh.new()
-	focinho.radius = 0.18
-	focinho.height = 0.24
-	malha(vm, m, "Focinho", focinho, mat(Color("#d9b08c")), Vector3(0, 0.76, 0.24))
-	for lado in [-1.0, 1.0]:
-		var chifre := CylinderMesh.new()
-		chifre.top_radius = 0.0
-		chifre.bottom_radius = 0.06
-		chifre.height = 0.3
-		malha(vm, m, "Chifre" + ("E" if lado < 0 else "D"), chifre, mat(Color("#f2e8cc")),
-			Vector3(lado * 0.3, 1.08, 0.0), Vector3(0, 0, -lado * 50))
-		var olho := SphereMesh.new()
-		olho.radius = 0.05
-		olho.height = 0.1
-		malha(vm, m, "Olho" + ("E" if lado < 0 else "D"), olho, mat(Color("#1a1a1a"), 0.0, 0.2),
-			Vector3(lado * 0.12, 0.92, 0.27))
-	salvar(m, OBJ + "minitaurinho_prototipo.tscn")
+	# --- Minitaurinho provisório (corpo a corpo) ---
+	salvar(minitaurinho("Minitaurinho", "res://scripts/inimigos/minitaurinho_prototipo.gd",
+		Color("#a0704a"), Color("#3f6fa8"), false), OBJ + "minitaurinho_prototipo.tscn")
+	# --- Minitaurinho arremessador (pelo cinza, tanga vermelha, pedra na mão) ---
+	salvar(minitaurinho("MinitaurinhoArremessador", "res://scripts/inimigos/minitaurinho_arremessador.gd",
+		Color("#7f7466"), Color("#b8342c"), true), OBJ + "minitaurinho_arremessador.tscn")
 
 	# --- Minotauro (chefe) ---
 	var mi := CharacterBody3D.new()
@@ -441,6 +403,66 @@ func gerar_objetos() -> void:
 		salvar(pr, OBJ + nome + ".tscn")
 
 
+func minitaurinho(nome: String, script: String, pelo: Color, cor_tanga: Color, arremessador: bool) -> Node:
+	var m := CharacterBody3D.new()
+	m.name = nome
+	m.set_script(load(script))
+	m.collision_layer = CAMADA_INIMIGO
+	m.collision_mask = CAMADA_CENARIO | CAMADA_JOGADOR | CAMADA_INIMIGO
+	var cap2 := CollisionShape3D.new()
+	var cs2 := CapsuleShape3D.new()
+	cs2.radius = 0.32
+	cs2.height = 1.1
+	cap2.shape = cs2
+	cap2.position = Vector3(0, 0.55, 0)
+	add(m, cap2, m, "Forma")
+	var vm := n3d(m, m, "Visual")
+	var marrom := mat(pelo)
+	var corpo := SphereMesh.new()
+	corpo.radius = 0.3
+	corpo.height = 0.55
+	malha(vm, m, "Corpo", corpo, marrom, Vector3(0, 0.35, 0))
+	var tanga := CylinderMesh.new()
+	tanga.top_radius = 0.28
+	tanga.bottom_radius = 0.24
+	tanga.height = 0.14
+	malha(vm, m, "Tanga", tanga, mat(cor_tanga), Vector3(0, 0.2, 0))
+	var cabeca := SphereMesh.new()
+	cabeca.radius = 0.32
+	cabeca.height = 0.6
+	malha(vm, m, "Cabeca", cabeca, marrom, Vector3(0, 0.85, 0))
+	var focinho := SphereMesh.new()
+	focinho.radius = 0.18
+	focinho.height = 0.24
+	malha(vm, m, "Focinho", focinho, mat(Color("#d9b08c")), Vector3(0, 0.76, 0.24))
+	for lado in [-1.0, 1.0]:
+		var chifre := CylinderMesh.new()
+		chifre.top_radius = 0.0
+		chifre.bottom_radius = 0.06
+		chifre.height = 0.3
+		malha(vm, m, "Chifre" + ("E" if lado < 0 else "D"), chifre, mat(Color("#f2e8cc")),
+			Vector3(lado * 0.3, 1.08, 0.0), Vector3(0, 0, -lado * 50))
+		var olho := SphereMesh.new()
+		olho.radius = 0.05
+		olho.height = 0.1
+		malha(vm, m, "Olho" + ("E" if lado < 0 else "D"), olho, mat(Color("#1a1a1a"), 0.0, 0.2),
+			Vector3(lado * 0.12, 0.92, 0.27))
+	if arremessador:
+		# faixa na testa e a pedra na mão (sobe acima da cabeça antes do arremesso)
+		var faixa := TorusMesh.new()
+		faixa.inner_radius = 0.27
+		faixa.outer_radius = 0.33
+		malha(vm, m, "Faixa", faixa, mat(cor_tanga), Vector3(0, 0.98, 0.0), Vector3(-10, 0, 0),
+			Vector3(1.0, 0.5, 1.0))
+		var pedra := SphereMesh.new()
+		pedra.radius = 0.17
+		pedra.height = 0.3
+		pedra.radial_segments = 8
+		pedra.rings = 4
+		malha(vm, m, "Pedra", pedra, mat(Color("#8c8378"), 0.0, 0.9), Vector3(0.3, 0.55, 0.15))
+	return m
+
+
 # ==========================================================================
 # SALAS LIGADAS POR PORTAIS (sem corredores)
 #
@@ -463,6 +485,8 @@ const SALAS_MAPA := {
 	"arena": ["", "Arena do Minotauro", "chefe", ["O"], 7, 0, 0],
 }
 const ORDEM_MUNDO := ["inicio", "A", "B", "C", "D", "E", "F", "arena"]
+## Quantos dos inimigos de cada sala são minitaurinhos ARREMESSADORES.
+const ARREMESSADORES := {"B": 1, "D": 1, "E": 1, "F": 2}
 
 
 func centro_sala(id: String) -> Vector3:
@@ -621,6 +645,8 @@ func sala_base(id: String) -> Node3D:
 	s.set("meio_tamanho", Vector2(d[4], d[4]))
 	s.set("quantidade_inimigos", d[5])
 	s.set("cena_inimigo", load(OBJ + "minitaurinho_prototipo.tscn"))
+	s.set("cena_arremessador", load(OBJ + "minitaurinho_arremessador.tscn"))
+	s.set("arremessadores", ARREMESSADORES.get(id, 0))
 	comodo(s, d[4], d[3])
 	if d[6] > 0:
 		var cela_x := 3.48 if id == "E" else -3.48
@@ -690,9 +716,11 @@ func sala_espelhos() -> Node3D:
 	add(s, pz, s, "Puzzle")
 	objeto(pz, s, "fonte_luz.tscn", Vector3(-4.95, 0, -2.5), 90, "FonteLuz")
 	# solução: E1 = -45°, E2 = 135°, E3 = -135° (cada clique gira +45°)
-	objeto(pz, s, "espelho.tscn", Vector3(-1.5, 0, -2.5), -135, "Espelho1")
-	objeto(pz, s, "espelho.tscn", Vector3(-1.5, 0, 2.5), 90, "Espelho2")
-	objeto(pz, s, "espelho.tscn", Vector3(2.5, 0, 2.5), 90, "Espelho3")
+	# (a posição inicial de cada espelho é sorteada a cada partida)
+	for e in [["Espelho1", Vector3(-1.5, 0, -2.5), -135, -45], ["Espelho2", Vector3(-1.5, 0, 2.5), 90, 135],
+			["Espelho3", Vector3(2.5, 0, 2.5), 90, -135]]:
+		var esp := objeto(pz, s, "espelho.tscn", e[1], e[2], e[0])
+		esp.set("angulo_solucao", e[3])
 	objeto(pz, s, "cristal.tscn", Vector3(2.5, 0, -1.5), 0, "Cristal")
 	objeto(s, s, "coluna_grega.tscn", Vector3(-4.3, 0, 4.3), 0, "Coluna")
 	objeto(s, s, "coluna_grega.tscn", Vector3(4.3, 0, 4.3), 0, "Coluna")
@@ -809,6 +837,7 @@ func fase_principal() -> Node3D:
 	# arena do Minotauro (14 × 14): chega-se só pelo portal roxo
 	var arena := area_simples(mapa, f, "arena", "res://scripts/salas/arena_minotauro.gd")
 	arena.set("zoom_camera", 1.22)
+	arena.set("tilt_shift", 0.3)
 	comodo(arena, 7, ["O"], 4, false, f, false)
 	var portao := inst(OBJ + "portao_minotauro.tscn") as Node3D
 	portao.position = Vector3(-7.15, 0, 0)
@@ -849,6 +878,183 @@ func fase_principal() -> Node3D:
 	return f
 
 
+# ==========================================================================
+# Tela de título: arena em miniatura + menu
+# ==========================================================================
+func ambiente_padrao(pai: Node, dono: Node) -> void:
+	var amb := WorldEnvironment.new()
+	var env := Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color("#2a2433")
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color("#c9bde0")
+	env.ambient_light_energy = 0.06
+	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+	amb.environment = env
+	add(pai, amb, dono, "Ambiente")
+	var sol := DirectionalLight3D.new()
+	sol.rotation_degrees = Vector3(-58, 28, 0)
+	sol.light_color = Color("#fff1dc")
+	sol.light_energy = 0.85
+	sol.shadow_enabled = true
+	sol.shadow_blur = 2.0
+	sol.directional_shadow_max_distance = 40.0
+	add(pai, sol, dono, "Sol")
+
+
+func filtro_tilt(pai: Node, dono: Node) -> void:
+	var ts := CanvasLayer.new()
+	ts.layer = 1
+	add(pai, ts, dono, "TiltShift")
+	var rect := ColorRect.new()
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var smt := ShaderMaterial.new()
+	smt.shader = load("res://scripts/visual/tilt_shift.gdshader")
+	rect.material = smt
+	add(ts, rect, dono, "Filtro")
+
+
+func tela_titulo() -> Node3D:
+	var t := Node3D.new()
+	t.name = "Titulo"
+	t.set_script(load("res://scripts/ui/titulo.gd"))
+	ambiente_padrao(t, t)
+	var sala := n3d(t, t, "Arena")
+	comodo(sala, 7, [], 2, false, t, false)
+	for pos in [Vector3(-4.5, 0, -4.5), Vector3(4.5, 0, -4.5), Vector3(-4.5, 0, 4.5), Vector3(4.5, 0, 4.5)]:
+		objeto(sala, t, "coluna_grega.tscn", pos, 0, "Coluna")
+	for pos in [Vector3(-3, 0, -6.98), Vector3(3, 0, -6.98)]:
+		tocha_parede(sala, t, pos, "N")
+	var cores := ["sol", "lua", "onda", "raio"]
+	var pos_b := [Vector3(-5.5, 0, -1.5), Vector3(5.5, 0, -1.5), Vector3(-5.5, 0, 2.5), Vector3(5.5, 0, 2.5)]
+	for k in 4:
+		var b := objeto(sala, t, "braseiro.tscn", pos_b[k], 0, "Braseiro")
+		b.set("simbolo", cores[k])
+	objeto(sala, t, "anfora.tscn", Vector3(-6.3, 0, -6.2), 0, "Anfora")
+	objeto(sala, t, "anfora.tscn", Vector3(6.3, 0, -6.2), 0, "Anfora")
+	modelo(sala, t, MOD + "props/ossos.glb", Vector3(2.2, 0, 3.4), 30, Vector3.ONE, "Ossos")
+	modelo(sala, t, MOD + "props/ossos.glb", Vector3(-3.0, 0, 0.8), -50, Vector3.ONE, "Ossos")
+	# o Minotauro (só o modelo, sem IA) e o Teseu de frente para ele
+	modelo(sala, t, MOD + "personagens/minotauro.glb", Vector3(0, 0, -2.6), 0, Vector3.ONE * 1.25, "Minotauro")
+	var teseu := inst(OBJ + "teseu_prototipo.tscn") as Node3D
+	teseu.position = Vector3(0.4, 0.05, 3.2)
+	teseu.get_node("Visual").rotation.y = deg_to_rad(180)
+	add(t, teseu, t, "Teseu")
+	var chao := StaticBody3D.new()
+	chao.collision_layer = CAMADA_CENARIO
+	add(t, chao, t, "ChaoInfinito")
+	var fc := CollisionShape3D.new()
+	fc.shape = WorldBoundaryShape3D.new()
+	add(chao, fc, t, "Forma")
+	var cam := Camera3D.new()
+	cam.fov = 40.0
+	cam.position = Vector3(0, 7.5, 11.5)
+	add(t, cam, t, "Camera")
+	filtro_tilt(t, t)
+
+	# interface
+	var ui := CanvasLayer.new()
+	ui.layer = 2
+	add(t, ui, t, "UI")
+	var principal := Control.new()
+	principal.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add(ui, principal, t, "Principal")
+	var sombra := ColorRect.new()
+	sombra.set_anchors_preset(Control.PRESET_LEFT_WIDE)
+	sombra.offset_right = 470
+	sombra.color = Color(0.04, 0.03, 0.08, 0.55)
+	sombra.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add(principal, sombra, t, "Sombra")
+	var logo := VBoxContainer.new()
+	logo.position = Vector2(15, 50)
+	logo.size = Vector2(440, 200)
+	logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add(principal, logo, t, "Logo")
+	var l1 := rotulo("LABIRINTO", 74)
+	l1.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l1.add_theme_color_override("font_color", Color("#ffc94a"))
+	l1.add_theme_color_override("font_outline_color", Color("#3a1d0c"))
+	l1.add_theme_constant_override("outline_size", 22)
+	add(logo, l1, t, "Linha1")
+	var l2 := rotulo("DO MINOTAURO", 46)
+	l2.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l2.add_theme_color_override("font_color", Color("#fff3d6"))
+	l2.add_theme_color_override("font_outline_color", Color("#3a1d0c"))
+	l2.add_theme_constant_override("outline_size", 18)
+	add(logo, l2, t, "Linha2")
+	var l3 := rotulo("~ uma aventura de Teseu ~", 22)
+	l3.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l3.add_theme_color_override("font_color", Color("#ffb0c8"))
+	add(logo, l3, t, "Linha3")
+	var caixa := CenterContainer.new()
+	caixa.set_anchors_preset(Control.PRESET_LEFT_WIDE)
+	caixa.offset_right = 470
+	caixa.offset_top = 270
+	add(principal, caixa, t, "Caixa")
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 12)
+	add(caixa, col, t, "Coluna")
+	for par in [["Jogar", "Jogar"], ["ComoJogar", "Como jogar"], ["Opcoes", "Opções"],
+			["Creditos", "Créditos"], ["Sair", "Sair"]]:
+		botao(col, t, par[0], par[1], 300, 24)
+	var versao := rotulo("Computação Gráfica · UNIFAL-MG · Godot 4.7", 15)
+	versao.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	versao.offset_left = -420
+	versao.offset_top = -34
+	versao.offset_right = -18
+	versao.offset_bottom = -12
+	versao.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	versao.modulate.a = 0.7
+	add(principal, versao, t, "Versao")
+
+	# painéis: como jogar, opções, créditos
+	for par in [["ComoJogar", "Como jogar"], ["Creditos", "Créditos"]]:
+		var c := tela_coluna(ui, t, par[0], 0.82)
+		var tt := rotulo(par[1], 42)
+		tt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		tt.add_theme_color_override("font_color", Color("#ffc94a"))
+		add(c, tt, t, "Titulo")
+		var tx := rotulo("", 21)
+		tx.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		tx.custom_minimum_size = Vector2(900, 0)
+		tx.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		add(c, tx, t, "Texto")
+		botao(c, t, "Voltar", "Voltar", 260)
+	var op := tela_coluna(ui, t, "Opcoes", 0.82)
+	var to := rotulo("Opções", 42)
+	to.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	to.add_theme_color_override("font_color", Color("#ffc94a"))
+	add(op, to, t, "Titulo")
+	botao(op, t, "Qualidade", "Qualidade gráfica: ALTA", 480)
+	var dica := rotulo("BAIXA: sem luz dinâmica nas tochas, sem tilt-shift,\nsombras simples e 85% da resolução (bom para GPU integrada).", 16)
+	dica.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	dica.modulate.a = 0.8
+	add(op, dica, t, "Dica")
+	for par in [["Musica", "Música"], ["Efeitos", "Efeitos"]]:
+		var linha := HBoxContainer.new()
+		linha.add_theme_constant_override("separation", 16)
+		add(op, linha, t, par[0])
+		var r := rotulo(par[1], 22)
+		r.custom_minimum_size = Vector2(120, 0)
+		add(linha, r, t, "Rotulo")
+		var barra := HSlider.new()
+		barra.min_value = 0
+		barra.max_value = 100
+		barra.step = 5
+		barra.custom_minimum_size = Vector2(340, 32)
+		barra.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		add(linha, barra, t, "Barra")
+	botao(op, t, "Voltar", "Voltar", 260)
+
+	var fade := ColorRect.new()
+	fade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fade.color = Color(0, 0, 0, 0)
+	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add(ui, fade, t, "Fade")
+	return t
+
+
 func rotulo(texto: String, tamanho: int) -> Label:
 	var l := Label.new()
 	l.text = texto
@@ -857,6 +1063,56 @@ func rotulo(texto: String, tamanho: int) -> Label:
 	l.add_theme_color_override("font_outline_color", Color("#2a1d14"))
 	l.add_theme_constant_override("outline_size", 8)
 	return l
+
+
+## Estilos de botão (normal e com foco), usados no HUD e na tela de título.
+func estilos_botao() -> Array:
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color(0.06, 0.09, 0.18, 0.95)
+	normal.border_color = Color("#e8d8a8")
+	normal.set_border_width_all(2)
+	normal.set_corner_radius_all(10)
+	var foco := normal.duplicate() as StyleBoxFlat
+	foco.border_color = Color("#ffc94a")
+	foco.bg_color = Color(0.12, 0.16, 0.3, 0.97)
+	foco.set_border_width_all(4)
+	return [normal, foco]
+
+
+func botao(pai: Node, dono: Node, nome: String, texto: String, largura := 320, tamanho := 22) -> Button:
+	var est := estilos_botao()
+	var b := Button.new()
+	b.text = texto
+	b.custom_minimum_size = Vector2(largura, 52)
+	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	b.add_theme_font_size_override("font_size", tamanho)
+	b.add_theme_color_override("font_focus_color", Color("#ffe9a8"))
+	b.add_theme_color_override("font_hover_color", Color("#ffe9a8"))
+	b.add_theme_stylebox_override("normal", est[0])
+	b.add_theme_stylebox_override("hover", est[1])
+	b.add_theme_stylebox_override("focus", est[1])
+	b.add_theme_stylebox_override("pressed", est[1])
+	add(pai, b, dono, nome)
+	return b
+
+
+## Tela cheia escura com uma coluna centralizada (menus e telas de fim).
+func tela_coluna(pai: Node, dono: Node, nome: String, opacidade := 0.8) -> VBoxContainer:
+	var tela := Control.new()
+	tela.set_anchors_preset(Control.PRESET_FULL_RECT)
+	tela.visible = false
+	add(pai, tela, dono, nome)
+	var fundo := ColorRect.new()
+	fundo.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fundo.color = Color(0.05, 0.04, 0.1, opacidade)
+	add(tela, fundo, dono, "Fundo")
+	var caixa_c := CenterContainer.new()
+	caixa_c.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add(tela, caixa_c, dono, "Caixa")
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 14)
+	add(caixa_c, col, dono, "Coluna")
+	return col
 
 
 ## HUD no estilo Zelda: Link's Awakening.
@@ -872,12 +1128,22 @@ func hud(f: Node) -> void:
 	desenho.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add(hud, desenho, f, "Desenho")
 
-	# caixa de diálogo (embaixo, centralizada)
+	# faixas pretas de cinema (cena da Ariadne): crescem da borda
+	for nome in ["FaixaCima", "FaixaBaixo"]:
+		var faixa := ColorRect.new()
+		faixa.color = Color.BLACK
+		faixa.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		faixa.set_anchors_preset(Control.PRESET_TOP_WIDE if nome == "FaixaCima" else Control.PRESET_BOTTOM_WIDE)
+		faixa.offset_top = 0
+		faixa.offset_bottom = 0
+		add(hud, faixa, f, nome)
+
+	# caixa de diálogo (embaixo, centralizada): nome de quem fala + texto
 	var dialogo := PanelContainer.new()
 	dialogo.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	dialogo.offset_left = -380
-	dialogo.offset_right = 380
-	dialogo.offset_top = -172
+	dialogo.offset_left = -400
+	dialogo.offset_right = 400
+	dialogo.offset_top = -190
 	dialogo.offset_bottom = -50
 	var estilo := StyleBoxFlat.new()
 	estilo.bg_color = Color(0.06, 0.09, 0.18, 0.93)
@@ -886,18 +1152,30 @@ func hud(f: Node) -> void:
 	estilo.set_corner_radius_all(12)
 	estilo.content_margin_left = 22
 	estilo.content_margin_right = 22
-	estilo.content_margin_top = 14
+	estilo.content_margin_top = 12
 	estilo.content_margin_bottom = 14
 	dialogo.add_theme_stylebox_override("panel", estilo)
 	dialogo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add(hud, dialogo, f, "Dialogo")
+	var coluna := VBoxContainer.new()
+	coluna.add_theme_constant_override("separation", 2)
+	add(dialogo, coluna, f, "Coluna")
+	var nome_fala := rotulo("Ariadne", 21)
+	add(coluna, nome_fala, f, "Nome")
 	var texto := Label.new()
 	texto.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	texto.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	texto.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	texto.add_theme_font_size_override("font_size", 23)
 	texto.add_theme_color_override("font_color", Color.WHITE)
 	texto.add_theme_constant_override("line_spacing", 4)
-	add(dialogo, texto, f, "Texto")
+	add(coluna, texto, f, "Texto")
+	# setinha "continua" (piscando no canto)
+	var seta := rotulo("▼", 18)
+	seta.size_flags_horizontal = Control.SIZE_SHRINK_END
+	seta.size_flags_vertical = Control.SIZE_SHRINK_END
+	seta.add_theme_color_override("font_color", Color("#ffc94a"))
+	add(dialogo, seta, f, "Seta")
 
 	# nome da sala ao chegar
 	var banner := rotulo("", 34)
@@ -908,7 +1186,7 @@ func hud(f: Node) -> void:
 	banner.add_theme_constant_override("outline_size", 10)
 	add(hud, banner, f, "Banner")
 
-	var ajuda := rotulo("WASD andar · Espaço espada · E usar · R reiniciar sala · Esc menu", 15)
+	var ajuda := rotulo("WASD andar · Espaço espada · Shift escudo · E usar · R reiniciar sala · Esc menu", 15)
 	ajuda.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	ajuda.offset_left = 20
 	ajuda.offset_top = -34
@@ -916,58 +1194,18 @@ func hud(f: Node) -> void:
 	ajuda.modulate.a = 0.75
 	add(hud, ajuda, f, "Ajuda")
 
-	var menu := Control.new()
-	menu.set_anchors_preset(Control.PRESET_FULL_RECT)
-	menu.visible = false
-	add(hud, menu, f, "Menu")
-	var fundo := ColorRect.new()
-	fundo.set_anchors_preset(Control.PRESET_FULL_RECT)
-	fundo.color = Color(0.05, 0.04, 0.1, 0.75)
-	add(menu, fundo, f, "Fundo")
-	var caixa_c := CenterContainer.new()
-	caixa_c.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add(menu, caixa_c, f, "Caixa")
-	var botoes := VBoxContainer.new()
-	botoes.add_theme_constant_override("separation", 12)
-	add(caixa_c, botoes, f, "Botoes")
+	# menu de pausa
+	var menu_col := tela_coluna(hud, f, "Menu", 0.75)
+	menu_col.name = "Botoes"
 	var titulo := rotulo("Pausado", 40)
 	titulo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	add(botoes, titulo, f, "Titulo")
-	var estilo_b := StyleBoxFlat.new()
-	estilo_b.bg_color = Color(0.06, 0.09, 0.18, 0.95)
-	estilo_b.border_color = Color("#e8d8a8")
-	estilo_b.set_border_width_all(2)
-	estilo_b.set_corner_radius_all(10)
-	var estilo_foco := estilo_b.duplicate() as StyleBoxFlat
-	estilo_foco.border_color = Color("#ffc94a")
-	estilo_foco.set_border_width_all(4)
+	add(menu_col, titulo, f, "Titulo")
 	for par in [["Continuar", "Continuar"], ["ReiniciarSala", "Reiniciar sala (R)"],
-			["ReiniciarJogo", "Reiniciar jogo"]]:
-		var b := Button.new()
-		b.text = par[1]
-		b.custom_minimum_size = Vector2(320, 52)
-		b.add_theme_font_size_override("font_size", 22)
-		b.add_theme_stylebox_override("normal", estilo_b)
-		b.add_theme_stylebox_override("hover", estilo_foco)
-		b.add_theme_stylebox_override("focus", estilo_foco)
-		b.add_theme_stylebox_override("pressed", estilo_foco)
-		add(botoes, b, f, par[0])
+			["ReiniciarJogo", "Reiniciar jogo"], ["MenuInicial", "Menu inicial"]]:
+		botao(menu_col, f, par[0], par[1])
 
 	# tela de vitória
-	var vit := Control.new()
-	vit.set_anchors_preset(Control.PRESET_FULL_RECT)
-	vit.visible = false
-	add(hud, vit, f, "Vitoria")
-	var fundo_v := ColorRect.new()
-	fundo_v.set_anchors_preset(Control.PRESET_FULL_RECT)
-	fundo_v.color = Color(0.05, 0.04, 0.1, 0.8)
-	add(vit, fundo_v, f, "Fundo")
-	var caixa_v := CenterContainer.new()
-	caixa_v.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add(vit, caixa_v, f, "Caixa")
-	var col_v := VBoxContainer.new()
-	col_v.add_theme_constant_override("separation", 16)
-	add(caixa_v, col_v, f, "Coluna")
+	var col_v := tela_coluna(hud, f, "Vitoria")
 	var t1 := rotulo("VITÓRIA!", 64)
 	t1.add_theme_color_override("font_color", Color("#ffc94a"))
 	t1.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -978,14 +1216,23 @@ func hud(f: Node) -> void:
 	var t3 := rotulo("", 20)
 	t3.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add(col_v, t3, f, "Detalhe")
-	var bj := Button.new()
-	bj.text = "Jogar de novo"
-	bj.custom_minimum_size = Vector2(320, 56)
-	bj.add_theme_font_size_override("font_size", 24)
-	bj.add_theme_stylebox_override("normal", estilo_b)
-	bj.add_theme_stylebox_override("hover", estilo_foco)
-	bj.add_theme_stylebox_override("focus", estilo_foco)
-	add(col_v, bj, f, "JogarDeNovo")
+	botao(col_v, f, "JogarDeNovo", "Jogar de novo", 320, 24)
+	botao(col_v, f, "MenuInicial", "Menu inicial", 320, 24)
+
+	# tela de game over (o novelo acabou)
+	var col_g := tela_coluna(hud, f, "GameOver", 0.88)
+	var g1 := rotulo("O FIO ACABOU...", 58)
+	g1.add_theme_color_override("font_color", Color("#e8322b"))
+	g1.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add(col_g, g1, f, "Titulo")
+	var g2 := rotulo("Sem o novelo de Ariadne, Teseu se perdeu no labirinto.", 26)
+	g2.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add(col_g, g2, f, "Texto")
+	var g3 := rotulo("", 20)
+	g3.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add(col_g, g3, f, "Detalhe")
+	botao(col_g, f, "TentarDeNovo", "Tentar de novo", 320, 24)
+	botao(col_g, f, "MenuInicial", "Menu inicial", 320, 24)
 
 	var fade := ColorRect.new()
 	fade.set_anchors_preset(Control.PRESET_FULL_RECT)

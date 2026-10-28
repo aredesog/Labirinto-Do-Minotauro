@@ -57,6 +57,7 @@ var _visual: Node3D
 var _mira: MeshInstance3D
 var _estrelas: Node3D
 var _flash: StandardMaterial3D
+var _t_casco := 0.0
 
 
 func _ready() -> void:
@@ -123,6 +124,11 @@ func _mudar(novo: Estado) -> void:
 	if novo == Estado.INVESTIDA:
 		_acertou_investida = false
 		_distancia_investida = 0.0
+	if novo == Estado.INTRO:
+		Som.tocar("rugido", 0.0, 0.03, 1.0 if not fase2 else 0.9)
+	elif novo == Estado.MIRAR:
+		Som.tocar("casco", 2.0)
+		Efeitos.poeira(global_position, 6, 0.5)
 
 
 func _fator_fase() -> float:
@@ -189,12 +195,15 @@ func _physics_process(delta: float) -> void:
 	velocity.x = plano.x
 	velocity.z = plano.z
 	move_and_slide()
+	_som_cascos(delta)
 
 	if estado == Estado.INVESTIDA:
 		_distancia_investida += plano.length() * delta
 		if _bateu_em_parede() or _distancia_investida > 22.0:
 			_mudar(Estado.ATORDOADO)
 			_tremer_camera(0.45)
+			Som.tocar("parede")
+			Efeitos.poeira(global_position + _dir_investida * 1.6 + Vector3.UP * 0.6, 16, 0.7)
 	_animar(delta)
 
 
@@ -215,10 +224,28 @@ func _bateu_em_parede() -> bool:
 	return false
 
 
+## Trote: um casco a cada passo; na investida, poeira levantando atrás.
+func _som_cascos(delta: float) -> void:
+	if estado != Estado.PERSEGUIR and estado != Estado.INVESTIDA:
+		return
+	_t_casco -= delta
+	if _t_casco > 0.0:
+		return
+	if estado == Estado.INVESTIDA:
+		_t_casco = 0.09
+		Som.tocar("casco", 0.0, 0.12)
+		Efeitos.poeira(global_position - _dir_investida * 0.8, 3, 0.5)
+	else:
+		_t_casco = 0.3 / _fator_fase()
+		Som.tocar("casco", -3.0, 0.12)
+
+
 func _bater_no_chao() -> void:
 	var frente := global_basis.z.normalized()
 	var impacto := global_position + frente * 2.4
 	impacto.y = 0.05
+	Som.tocar("impacto")
+	Efeitos.poeira(impacto, 14, 0.6)
 	_onda_de_choque(impacto)
 	_tremer_camera(0.3)
 	if _alvo and _alvo.has_method("levar_dano"):
@@ -239,6 +266,7 @@ func levar_dano(quantidade: int, _direcao: Vector3 = Vector3.ZERO) -> void:
 	vida = max(vida - quantidade, 0)
 	_invulneravel = 0.15
 	vida_mudou.emit(vida, vida_maxima)
+	Som.tocar("acerto", 0.0, 0.06, 0.8)
 	_piscar()
 	if vida == 0:
 		_morrer()
@@ -274,7 +302,12 @@ func _morrer() -> void:
 		tw.tween_property(_visual, "rotation:z", deg_to_rad(80), 1.2).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 		tw.parallel().tween_property(_visual, "position:y", -0.4, 1.2)
 	_tremer_camera(0.6)
-	await get_tree().create_timer(1.6).timeout
+	Som.tocar("rugido", 0.0, 0.0, 0.7)
+	Som.musica("", 2.0)
+	await get_tree().create_timer(1.0).timeout
+	Som.tocar("impacto")
+	Efeitos.poeira(global_position, 20, 0.8)
+	await get_tree().create_timer(0.6).timeout
 	derrotado.emit()
 
 

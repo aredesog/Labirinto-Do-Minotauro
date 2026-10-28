@@ -17,6 +17,10 @@ enum Estado { ESPERANDO, COMBATE, PUZZLE, CONCLUIDA }
 @export_range(1, 8) var quantidade_inimigos: int = 3
 @export var maximo_inimigos: int = 6
 @export var cena_inimigo: PackedScene
+## Minitaurinho que arremessa pedras (segundo tipo de inimigo).
+@export var cena_arremessador: PackedScene
+## Quantos dos inimigos da sala são arremessadores (+1 a cada 2 revisitas).
+@export var arremessadores: int = 0
 @export_multiline var dica_puzzle: String = "Resolva o enigma para libertar os prisioneiros."
 ## Meios corações recuperados ao vencer uma sala de combate.
 @export var cura_ao_vencer: int = 4
@@ -74,10 +78,24 @@ func iniciar() -> void:
 		_jogo.sala_atual = self
 	var qtd := mini(quantidade_inimigos + (visitas - 1), maximo_inimigos) if tipo == "combate" \
 		else quantidade_inimigos
-	_gerar_inimigos(qtd)
+	var n_arr := arremessadores + (int((visitas - 1) / 2.0) if tipo == "combate" and arremessadores > 0 else 0)
+	_gerar_inimigos(qtd, mini(n_arr, qtd - 1))
+	_musica_da_sala()
 
 
-func _gerar_inimigos(qtd: int) -> void:
+## Combate -> música de combate; enigma liberado -> música de enigma;
+## sala vencida -> exploração.
+func _musica_da_sala() -> void:
+	match estado:
+		Estado.COMBATE:
+			Som.musica("combate", 0.8)
+		Estado.PUZZLE:
+			Som.musica("enigma", 1.5)
+		_:
+			Som.musica("exploracao", 2.0)
+
+
+func _gerar_inimigos(qtd: int, n_arremessadores := 0) -> void:
 	if cena_inimigo == null:
 		push_warning("%s: sem cena_inimigo definida." % name)
 		_verificar_combate()
@@ -85,7 +103,8 @@ func _gerar_inimigos(qtd: int) -> void:
 	var pontos := _filhos_no_grupo("spawn_inimigo")
 	pontos.shuffle()
 	for i in qtd:
-		var inimigo := cena_inimigo.instantiate()
+		var cena := cena_arremessador if i < n_arremessadores and cena_arremessador else cena_inimigo
+		var inimigo := cena.instantiate()
 		add_child(inimigo)
 		var p: Node3D = pontos[i % pontos.size()] if pontos.size() > 0 else self
 		inimigo.global_position = p.global_position + Vector3(randf_range(-0.3, 0.3), 0.1, randf_range(-0.3, 0.3))
@@ -105,6 +124,7 @@ func _verificar_combate() -> void:
 	if puzzle:
 		estado = Estado.PUZZLE
 		puzzle.ativar()
+		_musica_da_sala()
 		if _jogo:
 			_jogo.mensagem.emit(dica_puzzle, 4.5)
 	else:
@@ -135,6 +155,7 @@ func _ao_resolver_puzzle() -> void:
 
 func _concluir() -> void:
 	estado = Estado.CONCLUIDA
+	_musica_da_sala()
 	for g in _filhos_no_grupo("grade_sala"):
 		g.abrir()
 	if _jogo == null:

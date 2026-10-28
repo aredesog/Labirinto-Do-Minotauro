@@ -10,6 +10,8 @@ extends Node3D
 @export var meio_tamanho: Vector2 = Vector2(5, 5)
 ## Afasta a câmera nesta sala (1 = normal). A arena usa mais para enquadrar a luta.
 @export var zoom_camera: float = 1.0
+## Multiplica o desfoque do tilt-shift nesta sala (a arena usa menos).
+@export_range(0.0, 1.5) var tilt_shift: float = 1.0
 
 var visitada := false
 

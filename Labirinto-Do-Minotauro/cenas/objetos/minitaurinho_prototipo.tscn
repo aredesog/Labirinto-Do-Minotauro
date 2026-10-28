@@ -77,45 +77,45 @@ material = SubResource("StandardMaterial3D_o4v2f")
 radius = 0.05
 height = 0.1
 
-[node name="Minitaurinho" type="CharacterBody3D" unique_id=515129216]
+[node name="Minitaurinho" type="CharacterBody3D" unique_id=1217361006]
 collision_layer = 4
 collision_mask = 7
 script = ExtResource("1_5k37b")
 
-[node name="Forma" type="CollisionShape3D" parent="." unique_id=529525052]
+[node name="Forma" type="CollisionShape3D" parent="." unique_id=2024424719]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
 shape = SubResource("CapsuleShape3D_imciw")
 
-[node name="Visual" type="Node3D" parent="." unique_id=818169996]
+[node name="Visual" type="Node3D" parent="." unique_id=1116743972]
 
-[node name="Corpo" type="MeshInstance3D" parent="Visual" unique_id=723238604]
+[node name="Corpo" type="MeshInstance3D" parent="Visual" unique_id=101509526]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
 mesh = SubResource("SphereMesh_rdrjb")
 
-[node name="Tanga" type="MeshInstance3D" parent="Visual" unique_id=2082998180]
+[node name="Tanga" type="MeshInstance3D" parent="Visual" unique_id=1684403964]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
 mesh = SubResource("CylinderMesh_o7bgs")
 
-[node name="Cabeca" type="MeshInstance3D" parent="Visual" unique_id=37740492]
+[node name="Cabeca" type="MeshInstance3D" parent="Visual" unique_id=241106361]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
 mesh = SubResource("SphereMesh_g53wy")
 
-[node name="Focinho" type="MeshInstance3D" parent="Visual" unique_id=119997308]
+[node name="Focinho" type="MeshInstance3D" parent="Visual" unique_id=151363665]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.76, 0.24)
 mesh = SubResource("SphereMesh_ypj24")
 
-[node name="ChifreE" type="MeshInstance3D" parent="Visual" unique_id=848370370]
+[node name="ChifreE" type="MeshInstance3D" parent="Visual" unique_id=777758164]
 transform = Transform3D(0.64278764, -0.76604444, 0, 0.76604444, 0.64278764, 0, 0, 0, 1, -0.3, 1.08, 0)
 mesh = SubResource("CylinderMesh_6oo0j")
 
-[node name="OlhoE" type="MeshInstance3D" parent="Visual" unique_id=850216130]
+[node name="OlhoE" type="MeshInstance3D" parent="Visual" unique_id=746529599]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.12, 0.92, 0.27)
 mesh = SubResource("SphereMesh_6wgwm")
 
-[node name="ChifreD" type="MeshInstance3D" parent="Visual" unique_id=2091748576]
+[node name="ChifreD" type="MeshInstance3D" parent="Visual" unique_id=1197230147]
 transform = Transform3D(0.64278764, 0.76604444, 0, -0.76604444, 0.64278764, 0, 0, 0, 1, 0.3, 1.08, 0)
 mesh = SubResource("CylinderMesh_rng3j")
 
-[node name="OlhoD" type="MeshInstance3D" parent="Visual" unique_id=1345081112]
+[node name="OlhoD" type="MeshInstance3D" parent="Visual" unique_id=1704944297]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.12, 0.92, 0.27)
 mesh = SubResource("SphereMesh_k1q77")
