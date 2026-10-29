@@ -24,6 +24,8 @@ aperte **F5**. A cena principal agora é a **tela de título**
 ## Como o labirinto funciona
 
 Não tem mais corredores: cada sala fica isolada e **toda porta é um portal**.
+Toda sala tem **3 portais (oeste, norte, leste)** e a **entrada embaixo**, por
+onde o Teseu chega. A partida tem **10 salas**: a 10ª é sempre o Minotauro.
 
 1. Ao chegar numa sala, as portas fecham com grade e surgem os minitaurinhos.
 2. Vencida a sala, os portais acendem, todos iguais. **O destino é surpresa:**
@@ -32,24 +34,29 @@ Não tem mais corredores: cada sala fica isolada e **toda porta é um portal**.
    jogo sempre pode ser terminado:
    - enquanto faltar enigma, **pelo menos um portal leva a um enigma pendente**
      (mas o jogador não sabe qual);
+   - se faltam tantos enigmas quanto salas antes da 10ª, **todos** os portais
+     levam a enigma (por isso os 3 sempre ficam prontos até a 9ª sala);
    - os outros portais levam a **salas de combate aleatórias** (30% de chance de
      ser outro enigma);
-   - com os **3 enigmas** resolvidos, um portal passa a levar ao **Minotauro**;
+   - saindo da **9ª sala**, todos os portais levam ao **Minotauro**
+     (`sala_do_minotauro` no GerenciadorJogo);
    - um portal nunca leva para a própria sala nem para um enigma já resolvido.
    Para depurar, marque `revelar_destino` numa porta para ver a cor do destino.
 4. **Salas de combate podem se repetir**, e voltam com +1 inimigo a cada
    visita (até 6). Vencer uma sala de combate cura **2 corações**.
 
-| Sala | Tipo | Portas | Inimigos | Presos |
-|---|---|---|---|---|
-| Entrada do Labirinto | início | 2 | - | - |
-| Sala das Estátuas | enigma | 3 | 3 | 4 |
-| Sala dos Braseiros | enigma | 2 | 3 | 4 |
-| Sala dos Espelhos | enigma | 3 | 4 | 5 |
-| Salão dos Chifres | combate | 3 | 3+ | - |
-| Cova dos Minitauros | combate | 2 | 4+ | - |
-| Antecâmara | combate | 3 | 4+ | - |
-| Arena do Minotauro | chefe | - | - | - |
+| Sala | Tipo | Inimigos (arremessadores) | Presos |
+|---|---|---|---|
+| Entrada do Labirinto | início | - | - |
+| Sala das Estátuas | enigma | 3 | 4 |
+| Sala dos Braseiros | enigma | 3 | 4 |
+| Sala dos Espelhos | enigma | 4 (1) | 5 |
+| Salão dos Chifres | combate | 3+ (1) | - |
+| Cova dos Minitauros | combate | 4+ (1) | - |
+| Antecâmara | combate | 4+ (2) | - |
+| Arena do Minotauro | chefe (sempre a 10ª sala) | - | - |
+
+Todas têm portais a oeste, norte e leste; a arena só tem o portão de entrada.
 
 Para testar com sempre o mesmo sorteio, coloque um número em `semente` no nó
 `GerenciadorJogo` (0 = aleatório).
@@ -84,8 +91,10 @@ corações saem da curva paramétrica do coração.
 
 - **Escudo (Shift):** Teseu anda mais devagar e não ataca, mas bloqueia golpes
   e pedras **de frente**. Minitaurinho e pedra: sem dano. Minotauro: metade.
-- **Minitaurinho arremessador** (pelo cinza, faixa vermelha): fica longe, ergue a
-  pedra acima da cabeça (aviso) e arremessa. A espada quebra a pedra no ar.
+- **Minitaurinho normal:** 3 golpes de espada. Cada cabeçada tira meio coração.
+- **Minitaurinho arremessador** (pelo cinza, faixa vermelha, 2 golpes): fica longe,
+  ergue a pedra acima da cabeça (aviso) e arremessa. A pedra tira **1 coração**;
+  o escudo bloqueia tudo e a espada quebra a pedra no ar.
   Quantos aparecem por sala: tabela `ARREMESSADORES` em `gerar_cenas.gd`
   (Salão dos Chifres 1, Cova 1, Espelhos 1, Antecâmara 2; +1 a cada 2 revisitas).
 - **Partículas** (`scripts/visual/efeitos.gd`): faíscas, poeira, fumaça, estilhaços.
@@ -139,11 +148,14 @@ Barra de vida no topo e 24 de vida. Padrões, cada um com aviso visual:
 - **Golpe de machado:** se o Teseu chega perto, ele **ergue o machado** (aviso)
   e bate no chão, soltando uma onda de choque na frente. Tira 1 coração.
 - **Investida:** ele **empina e aparece uma faixa vermelha no chão** (aviso),
-  depois dispara em linha reta. Tira 1,5 coração.
-  Se bater numa **parede ou coluna**, fica **atordoado** (estrelas na cabeça):
-  é a hora de atacar, porque a espada tira o **dobro**.
+  depois dispara em linha reta. Se **acertar**, tira 1,5 coração, joga o Teseu
+  para o lado e freia (não fica atordoado). Se **errar** e bater numa **parede
+  ou coluna**, fica **atordoado** (estrelas na cabeça): é a hora de atacar,
+  porque a espada tira o **dobro**.
+- Se ficar preso atrás de uma pilastra, ele percebe e contorna sozinho.
 - **Fase 2** (metade da vida): ele ruge, fica mais rápido e chama 2 minitaurinhos.
-- Morreu na arena: a luta recomeça e gasta uma volta do novelo.
+- Morreu na arena: a luta recomeça, gasta uma volta do novelo e o Minotauro
+  recupera só **25% da vida** (`recuperacao_ao_vencer`), mantendo a fase 2.
 - Venceu: tela de **vitória** com o resumo e o botão "Jogar de novo".
 
 A animação é **procedural**: o modelo tem pivôs (pernas, tronco, cabeça, braços,

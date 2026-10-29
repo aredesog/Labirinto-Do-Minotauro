@@ -53,13 +53,16 @@ integrada (ex.: Radeon 610M, Intel UHD) o jogo já começa na qualidade **baixa*
 ![Ariadne entrega o novelo](docs/capturas/15_abertura_ariadne.png)
 
 ### Estrutura do jogo
-- **Salas ligadas por portais:** não há corredores. Ao vencer uma sala, cada
-  porta vira um portal com destino **sorteado e escondido**. O sorteio garante
-  que sempre exista caminho para um enigma pendente, então o jogo nunca trava.
+- **Salas ligadas por portais:** não há corredores. Toda sala tem a entrada embaixo
+  e 3 portais (esquerda, cima, direita). Ao vencer a sala, cada portal ganha um
+  destino **sorteado e escondido**.
+- **A partida tem 10 salas:** a 10ª é sempre a arena do Minotauro. O sorteio força
+  enigmas quando faltam poucas salas, então os 3 enigmas sempre ficam prontos até
+  a 9ª. O HUD mostra "SALA n / 10".
 - **3 salas de enigma + 3 salas de combate.** As de combate podem se repetir,
   com +1 inimigo a cada visita, e curam o Teseu quando vencidas.
 - Ao entrar numa sala, as portas fecham com grade até os minitaurinhos serem derrotados.
-- Com os 3 enigmas resolvidos, um dos portais passa a levar ao Minotauro.
+- Depois da 9ª sala, todos os portais levam ao Minotauro.
 
 ### Enigmas
 | Sala | Enigma |
@@ -77,7 +80,9 @@ pode aparecer espelhada (esquerda/direita).
 ### Chefe: o Minotauro
 Corpo de cavalo, tronco e cabeça de touro, machado duplo. Padrões com aviso visual:
 - **Golpe de machado:** ele ergue o machado e bate no chão, soltando uma onda de choque.
-- **Investida:** uma faixa vermelha no chão avisa antes; se ele bater numa parede ou coluna, fica **atordoado** e leva dano em dobro.
+- **Investida:** uma faixa vermelha no chão avisa antes. Se ela **acertar**, o Teseu é jogado para o
+  lado e o Minotauro freia. Se ele **errar** e bater numa parede ou coluna, fica **atordoado** e leva dano em dobro.
+- Se o Teseu morrer na arena, o Minotauro recupera só **25% da vida** (não a vida toda).
 - **Fase 2:** com metade da vida, fica mais rápido e chama 2 minitaurinhos.
 - Barra de vida, tremor de câmera e tela de vitória.
 
@@ -86,8 +91,9 @@ Corpo de cavalo, tronco e cabeça de touro, machado duplo. Padrões com aviso vi
 ### Combate
 - **Escudo hoplon funcional:** segurando Shift, Teseu anda devagar e bloqueia o que vem
   da frente (minitaurinho e pedra: sem dano; Minotauro: metade). Pelas costas não protege.
-- **Dois tipos de inimigo:** minitaurinho de corpo a corpo e o **arremessador**, que
-  foge de perto, ergue a pedra (aviso) e arremessa. A espada quebra a pedra no ar.
+- **Dois tipos de inimigo:** minitaurinho de corpo a corpo (3 golpes) e o **arremessador**
+  (2 golpes), que foge de perto, ergue a pedra (aviso) e arremessa. A pedra tira 1 coração;
+  o escudo bloqueia tudo e a espada quebra a pedra no ar.
 - **Partículas:** faíscas na espada e no escudo, poeira dos cascos e da investida do
   Minotauro, fumaça quando um minitaurinho some, estilhaços de pedra.
 

@@ -237,8 +237,10 @@ func gerar_objetos() -> void:
 	salvar(minitaurinho("Minitaurinho", "res://scripts/inimigos/minitaurinho_prototipo.gd",
 		Color("#a0704a"), Color("#3f6fa8"), false), OBJ + "minitaurinho_prototipo.tscn")
 	# --- Minitaurinho arremessador (pelo cinza, tanga vermelha, pedra na mão) ---
-	salvar(minitaurinho("MinitaurinhoArremessador", "res://scripts/inimigos/minitaurinho_arremessador.gd",
-		Color("#7f7466"), Color("#b8342c"), true), OBJ + "minitaurinho_arremessador.tscn")
+	var arr := minitaurinho("MinitaurinhoArremessador", "res://scripts/inimigos/minitaurinho_arremessador.gd",
+		Color("#7f7466"), Color("#b8342c"), true)
+	arr.set("vida", 2)  # o arremessador é mais frágil (a pedra é que dói)
+	salvar(arr, OBJ + "minitaurinho_arremessador.tscn")
 
 	# --- Minotauro (chefe) ---
 	var mi := CharacterBody3D.new()
@@ -247,7 +249,9 @@ func gerar_objetos() -> void:
 	mi.collision_layer = CAMADA_INIMIGO
 	mi.collision_mask = CAMADA_CENARIO | CAMADA_JOGADOR
 	mi.set("cena_minitaurinho", load(OBJ + "minitaurinho_prototipo.tscn"))
-	caixa(mi, mi, Vector3(1.25, 3.0, 2.5), Vector3(0, 1.5, -0.25))
+	# cilindro (não muda com a rotação): o Minotauro não fica entalado
+	# entre a pilastra e a parede ao virar
+	cilindro(mi, mi, 0.95, 3.0, Vector3(0, 1.5, -0.1))
 	var vmi := n3d(mi, mi, "Visual")
 	modelo(vmi, mi, MOD + "personagens/minotauro.glb", Vector3.ZERO, 0, Vector3.ONE * 1.25)
 	var faixa_mira := QuadMesh.new()
@@ -475,14 +479,14 @@ const ESPACO_SALAS := 40.0
 
 ## id: [nome do arquivo, título, tipo, portas, metade do tamanho, inimigos, presos]
 const SALAS_MAPA := {
-	"inicio": ["", "Entrada do Labirinto", "inicio", ["L", "N"], 3, 0, 0],
+	"inicio": ["", "Entrada do Labirinto", "inicio", ["O", "N", "L"], 3, 0, 0],
 	"A": ["sala_A_estatuas", "Sala das Estátuas", "puzzle", ["O", "N", "L"], 5, 3, 4],
-	"B": ["sala_B_combate", "Salão dos Chifres", "combate", ["S", "N", "L"], 5, 3, 0],
-	"C": ["sala_C_braseiros", "Sala dos Braseiros", "puzzle", ["O", "L"], 5, 3, 4],
-	"D": ["sala_D_combate", "Cova dos Minitauros", "combate", ["O", "S"], 5, 4, 0],
+	"B": ["sala_B_combate", "Salão dos Chifres", "combate", ["O", "N", "L"], 5, 3, 0],
+	"C": ["sala_C_braseiros", "Sala dos Braseiros", "puzzle", ["O", "N", "L"], 5, 3, 4],
+	"D": ["sala_D_combate", "Cova dos Minitauros", "combate", ["O", "N", "L"], 5, 4, 0],
 	"E": ["sala_E_espelhos", "Sala dos Espelhos", "puzzle", ["O", "N", "L"], 5, 4, 5],
-	"F": ["sala_F_combate", "Antecâmara", "combate", ["N", "S", "L"], 5, 4, 0],
-	"arena": ["", "Arena do Minotauro", "chefe", ["O"], 7, 0, 0],
+	"F": ["sala_F_combate", "Antecâmara", "combate", ["O", "N", "L"], 5, 4, 0],
+	"arena": ["", "Arena do Minotauro", "chefe", ["S"], 7, 0, 0],
 }
 const ORDEM_MUNDO := ["inicio", "A", "B", "C", "D", "E", "F", "arena"]
 ## Quantos dos inimigos de cada sala são minitaurinhos ARREMESSADORES.
@@ -527,10 +531,16 @@ func piso_area(pai: Node3D, dono: Node, celulas: Array) -> void:
 
 ## Estrutura de um cômodo quadrado (metade do lado = h) com portas de 2 m
 ## (4 m na arena) nos lados pedidos. Cria grades, marcadores e colisão.
+## Cômodo quadrado (2h × 2h). "portas" = lados com portal (O, N, L).
+## entrada = true: o lado SUL tem a entrada (grade fechada, só decorativa),
+## por onde o Teseu chega em toda sala.
 func comodo(raiz: Node3D, h: int, portas: Array, largura_porta := 2, com_grades := true, dono: Node = null,
-		portais := true) -> void:
+		portais := true, entrada := true) -> void:
 	if dono == null:
 		dono = raiz
+	var abertos: Array = portas.duplicate()
+	if entrada:
+		abertos.append("S")
 	var est := n3d(raiz, dono, "Estrutura")
 	var celulas := []
 	for i in range(-h, h):
@@ -543,23 +553,39 @@ func comodo(raiz: Node3D, h: int, portas: Array, largura_porta := 2, com_grades 
 	for k in range(-h, h):
 		var m := k + 0.5
 		var na_porta := absf(m) < meia_porta
-		if not (na_porta and "N" in portas):
+		if not (na_porta and "N" in abertos):
 			parede_em(paredes, col, dono, Vector3(m, 0, -h), "N")
-		if not (na_porta and "S" in portas):
+		if not (na_porta and "S" in abertos):
 			parede_em(paredes, col, dono, Vector3(m, 0, h), "S")
-		if not (na_porta and "O" in portas):
+		if not (na_porta and "O" in abertos):
 			parede_em(paredes, col, dono, Vector3(-h, 0, m), "O")
-		if not (na_porta and "L" in portas):
+		if not (na_porta and "L" in abertos):
 			parede_em(paredes, col, dono, Vector3(h, 0, m), "L")
 	for sx in [-1.0, 1.0]:
 		modelo(est, dono, MOD + "cenario/pilar.glb", Vector3(sx * (h + 0.15), 0, -h - 0.15), 0,
 			Vector3.ONE, "PilarCanto")
 	if "N" in portas and largura_porta == 2:
 		modelo(est, dono, MOD + "cenario/arco_porta.glb", Vector3(0, 0, -h - 0.15), 0, Vector3.ONE, "Arco")
+	if entrada:
+		entrada_sul(raiz, dono, h)
 	if not portais:
 		return
 	for lado in portas:
 		porta_portal(raiz, dono, h, lado, com_grades)
+
+
+## Entrada da sala (lado sul): grade sempre fechada atrás do Teseu e o
+## marcador "Chegada", onde ele aparece ao atravessar um portal.
+func entrada_sul(raiz: Node3D, dono: Node, h: int) -> void:
+	var e := n3d(raiz, dono, "EntradaSul", Vector3(0, 0, h + 0.15))
+	e.rotation.y = PI
+	modelo(e, dono, MOD + "cenario/arco_porta.glb", Vector3.ZERO, 0, Vector3.ONE, "Arco")
+	var g := inst(OBJ + "grade_porta.tscn") as Node3D
+	g.set("comeca_fechada", true)
+	add(e, g, dono, "Grade")
+	var fundo := corpo_estatico(e, dono, "Fundo")
+	caixa(fundo, dono, Vector3(2.6, 3.0, 0.4), Vector3(0, 1.5, -1.25))
+	marcador(raiz, dono, "Chegada", Vector3(0, 0.1, h - 1.3))
 
 
 ## Porta-portal. Orientação local: -Z = para fora da sala, +Z = para dentro.
@@ -700,7 +726,7 @@ func sala_braseiros() -> Node3D:
 		b.set("simbolo", simbolo)
 	objeto(s, s, "anfora.tscn", Vector3(4.45, 0, 4.3), 0, "Anfora")
 	objeto(s, s, "anfora.tscn", Vector3(-4.45, 0, 4.3), 0, "Anfora")
-	tocha_parede(s, s, Vector3(0.6, 0, -4.98), "N")
+	tocha_parede(s, s, Vector3(-1.6, 0, -4.98), "N")
 	tocha_parede(s, s, Vector3(-4.98, 0, 3.0), "O")
 	tocha_parede(s, s, Vector3(4.98, 0, 3.0), "L")
 	spawns(s, [Vector3(0, 0, 0.2), Vector3(0, 0, 3.6), Vector3(-3.5, 0, 3.6), Vector3(3.5, 0, 3.6)])
@@ -724,7 +750,7 @@ func sala_espelhos() -> Node3D:
 	objeto(pz, s, "cristal.tscn", Vector3(2.5, 0, -1.5), 0, "Cristal")
 	objeto(s, s, "coluna_grega.tscn", Vector3(-4.3, 0, 4.3), 0, "Coluna")
 	objeto(s, s, "coluna_grega.tscn", Vector3(4.3, 0, 4.3), 0, "Coluna")
-	modelo(s, s, MOD + "props/ossos.glb", Vector3(0.5, 0, 4.0), -20, Vector3.ONE, "Ossos")
+	modelo(s, s, MOD + "props/ossos.glb", Vector3(2.6, 0, 4.0), -20, Vector3.ONE, "Ossos")
 	tocha_parede(s, s, Vector3(-3.0, 0, -4.98), "N")
 	spawns(s, [Vector3(-3.5, 0, 2.0), Vector3(3.5, 0, 2.0), Vector3(0.5, 0, 1.5), Vector3(-3.0, 0, -4.0)])
 	return s
@@ -739,20 +765,20 @@ func sala_combate(id: String) -> Node3D:
 				objeto(s, s, "coluna_grega.tscn", p, 0, "Coluna")
 			objeto(s, s, "anfora.tscn", Vector3(-4.4, 0, 4.3), 0, "Anfora")
 			tocha_parede(s, s, Vector3(-3.0, 0, -4.98), "N")
-			tocha_parede(s, s, Vector3(-4.98, 0, 0.0), "O")
-			spawns(s, [Vector3(-3.5, 0, 0.5), Vector3(3.0, 0, -3.5), Vector3(0.0, 0, -2.5), Vector3(3.5, 0, 3.5)])
+			tocha_parede(s, s, Vector3(-4.98, 0, 3.0), "O")
+			spawns(s, [Vector3(-3.5, 0, -2.5), Vector3(3.0, 0, -3.5), Vector3(0.0, 0, -2.5), Vector3(3.5, 0, 2.0)])
 		"D":
 			for p in [Vector3(-4.4, 0, -4.3), Vector3(4.4, 0, -4.3), Vector3(4.4, 0, 4.3), Vector3(-4.4, 0, 4.3)]:
 				objeto(s, s, "anfora.tscn", p, 0, "Anfora")
 			objeto(s, s, "coluna_grega.tscn", Vector3(0, 0, -1.0), 0, "Coluna")
 			modelo(s, s, MOD + "props/ossos.glb", Vector3(2.5, 0, 2.0), 50, Vector3.ONE, "Ossos")
-			tocha_parede(s, s, Vector3(0.0, 0, -4.98), "N")
-			tocha_parede(s, s, Vector3(4.98, 0, 0.0), "L")
+			tocha_parede(s, s, Vector3(-3.0, 0, -4.98), "N")
+			tocha_parede(s, s, Vector3(4.98, 0, 3.0), "L")
 			spawns(s, [Vector3(3.5, 0, -3.0), Vector3(3.5, 0, 3.0), Vector3(-2.5, 0, -3.0), Vector3(0.0, 0, 2.5)])
 		"F":
 			for p in [Vector3(-2.5, 0, -2.5), Vector3(2.5, 0, -2.5), Vector3(-2.5, 0, 2.5), Vector3(2.5, 0, 2.5)]:
 				objeto(s, s, "coluna_grega.tscn", p, 0, "Coluna")
-			modelo(s, s, MOD + "props/ossos.glb", Vector3(-3.5, 0, 0.0), 10, Vector3.ONE, "Ossos")
+			modelo(s, s, MOD + "props/ossos.glb", Vector3(-3.5, 0, 3.6), 10, Vector3.ONE, "Ossos")
 			tocha_parede(s, s, Vector3(-3.0, 0, -4.98), "N")
 			tocha_parede(s, s, Vector3(3.0, 0, -4.98), "N")
 			spawns(s, [Vector3(-4.0, 0, -4.0), Vector3(4.0, 0, -4.0), Vector3(-4.0, 0, 4.0), Vector3(4.0, 0, 4.0), Vector3(0.0, 0, 0.0)])
@@ -838,19 +864,20 @@ func fase_principal() -> Node3D:
 	var arena := area_simples(mapa, f, "arena", "res://scripts/salas/arena_minotauro.gd")
 	arena.set("zoom_camera", 1.22)
 	arena.set("tilt_shift", 0.3)
-	comodo(arena, 7, ["O"], 4, false, f, false)
+	# entrada pelo sul (portão largo), como nas outras salas
+	comodo(arena, 7, ["S"], 4, false, f, false, false)
 	var portao := inst(OBJ + "portao_minotauro.tscn") as Node3D
-	portao.position = Vector3(-7.15, 0, 0)
-	portao.rotation.y = deg_to_rad(90)
+	portao.position = Vector3(0, 0, 7.15)
+	portao.rotation.y = PI
 	add(arena, portao, f, "PortaoMinotauro")
-	marcador(arena, f, "Chegada", Vector3(-5.2, 0.1, 0))
+	marcador(arena, f, "Chegada", Vector3(0, 0.1, 5.2))
 	for pos in [Vector3(-4.5, 0, -4.5), Vector3(4.5, 0, -4.5), Vector3(-4.5, 0, 4.5), Vector3(4.5, 0, 4.5)]:
 		objeto(arena, f, "coluna_grega.tscn", pos, 0, "Coluna")
 	tocha_parede(arena, f, Vector3(-3, 0, -6.98), "N")
 	tocha_parede(arena, f, Vector3(3, 0, -6.98), "N")
 	var chefe := inst(OBJ + "minotauro.tscn") as Node3D
-	chefe.position = Vector3(3.5, 0.05, 0)
-	chefe.rotation.y = deg_to_rad(-90)
+	chefe.position = Vector3(0, 0.05, -3.5)
+	chefe.rotation.y = 0.0
 	add(arena, chefe, f, "Minotauro")
 
 	# jogador e câmera
@@ -921,7 +948,7 @@ func tela_titulo() -> Node3D:
 	t.set_script(load("res://scripts/ui/titulo.gd"))
 	ambiente_padrao(t, t)
 	var sala := n3d(t, t, "Arena")
-	comodo(sala, 7, [], 2, false, t, false)
+	comodo(sala, 7, [], 2, false, t, false, false)
 	for pos in [Vector3(-4.5, 0, -4.5), Vector3(4.5, 0, -4.5), Vector3(-4.5, 0, 4.5), Vector3(4.5, 0, 4.5)]:
 		objeto(sala, t, "coluna_grega.tscn", pos, 0, "Coluna")
 	for pos in [Vector3(-3, 0, -6.98), Vector3(3, 0, -6.98)]:

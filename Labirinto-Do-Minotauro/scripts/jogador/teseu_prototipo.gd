@@ -222,7 +222,8 @@ func _interagir() -> void:
 
 
 # --------------------------------------------------------------------------
-func levar_dano(quantidade: int, direcao: Vector3 = Vector3.ZERO) -> void:
+## bloqueio_total: se o escudo pegar, o dano vai a zero (pedras).
+func levar_dano(quantidade: int, direcao: Vector3 = Vector3.ZERO, bloqueio_total := false) -> void:
 	if _invulneravel > 0.0 or vida <= 0:
 		return
 	if bloqueia(direcao):
@@ -235,7 +236,7 @@ func levar_dano(quantidade: int, direcao: Vector3 = Vector3.ZERO) -> void:
 			var tw := create_tween()
 			tw.tween_property(_escudo, "position", ESCUDO_FRENTE[0] - Vector3(0, 0, 0.12), 0.05)
 			tw.tween_property(_escudo, "position", ESCUDO_FRENTE[0], 0.12)
-		quantidade = quantidade / 2
+		quantidade = 0 if bloqueio_total else quantidade / 2
 		if quantidade <= 0:
 			_invulneravel = 0.25
 			return
@@ -309,6 +310,11 @@ func renascer(posicao: Vector3) -> void:
 
 ## Rede de segurança: se algo empurrar o Teseu para fora do mapa,
 ## ele volta ao último checkpoint sem gastar o novelo.
+## Joga o Teseu longe (investida do Minotauro). A física segura nas paredes.
+func arremessar(impulso: Vector3) -> void:
+	_empurrao = Vector3(impulso.x, 0, impulso.z)
+
+
 ## Liga/desliga o controle (cenas, telas de fim).
 func definir_controle(ativo: bool) -> void:
 	_controle_ativo = ativo

@@ -6,11 +6,11 @@
 height = 2.2
 radius = 0.33
 
-[node name="ColunaGrega" type="StaticBody3D" unique_id=1281813150]
+[node name="ColunaGrega" type="StaticBody3D" unique_id=1470295169]
 collision_mask = 0
 
 [node name="Modelo" type="Node3D" parent="." unique_id=215583839 instance=ExtResource("1_pkm5i")]
 
-[node name="Forma" type="CollisionShape3D" parent="." unique_id=1203323284]
+[node name="Forma" type="CollisionShape3D" parent="." unique_id=1386182543]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
 shape = SubResource("CylinderShape3D_sl4wt")

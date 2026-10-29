@@ -7,8 +7,10 @@ extends CharacterBody3D
 ##   GOLPE      -> se o Teseu está perto: ergue o machado (aviso) e bate no
 ##                 chão, soltando uma onda de choque na frente.
 ##   INVESTIDA  -> empina e mostra uma faixa vermelha no chão (aviso), depois
-##                 dispara em linha reta. Se bater em parede ou coluna, fica
-##                 ATORDOADO por um tempo: é a hora de atacar (dano em dobro).
+##                 dispara em linha reta.
+##                 - ACERTOU o Teseu: joga ele para o lado e FREIA (sem atordoar).
+##                 - ERROU e bateu em parede/coluna: fica ATORDOADO, a hora de
+##                   atacar (dano em dobro).
 ##   FASE 2     -> com metade da vida: ruge, fica mais rápido e chama 2
 ##                 minitaurinhos.
 ##
@@ -18,7 +20,7 @@ extends CharacterBody3D
 signal vida_mudou(atual: int, maximo: int)
 signal derrotado
 
-enum Estado { PARADO, INTRO, PERSEGUIR, MIRAR, INVESTIDA, ATORDOADO, ERGUER, GOLPE, RECUPERAR, MORTO }
+enum Estado { PARADO, INTRO, PERSEGUIR, MIRAR, INVESTIDA, ATORDOADO, ERGUER, GOLPE, RECUPERAR, MORTO, FREAR }
 
 @export var vida_maxima: int = 24
 @export var velocidade_trote: float = 2.4
@@ -31,6 +33,10 @@ enum Estado { PARADO, INTRO, PERSEGUIR, MIRAR, INVESTIDA, ATORDOADO, ERGUER, GOL
 @export var cena_minitaurinho: PackedScene
 ## Usado pela espada do Teseu: o Minotauro é grande, então acerta de mais longe.
 @export var raio_acerto: float = 1.4
+## Força com que a investida joga o Teseu para o lado.
+@export var forca_arremesso: float = 13.0
+## Fração da vida máxima que ele recupera quando o Teseu morre na arena.
+@export_range(0.0, 1.0) var recuperacao_ao_vencer: float = 0.25
 
 var vida: int
 var estado: Estado = Estado.PARADO
@@ -58,6 +64,10 @@ var _mira: MeshInstance3D
 var _estrelas: Node3D
 var _flash: StandardMaterial3D
 var _t_casco := 0.0
+# destravar: se ele quer andar mas não sai do lugar (preso em pilastra/canto)
+var _t_preso := 0.0
+var _desvio := Vector3.ZERO
+var _t_desvio := 0.0
 
 
 func _ready() -> void:
@@ -95,10 +105,23 @@ func comecar() -> void:
 func resetar() -> void:
 	vida = vida_maxima
 	fase2 = false
+	_voltar_ao_inicio()
+
+
+## O Teseu morreu na arena: o Minotauro NÃO volta com a vida cheia, só
+## recupera um pouco (25% da vida máxima). A fase 2 continua se já tinha começado.
+func recuperar_parcial() -> void:
+	vida = mini(vida + int(round(vida_maxima * recuperacao_ao_vencer)), vida_maxima)
+	_voltar_ao_inicio()
+
+
+func _voltar_ao_inicio() -> void:
 	position = _posicao_inicial
 	rotation = Vector3(0, _rotacao_inicial, 0)
 	velocity = Vector3.ZERO
 	_cooldown_investida = 3.0
+	_t_desvio = 0.0
+	_t_preso = 0.0
 	for r in _reforcos:
 		if is_instance_valid(r):
 			r.queue_free()
@@ -157,8 +180,12 @@ func _physics_process(delta: float) -> void:
 			if _t > 1.8:
 				_mudar(Estado.PERSEGUIR)
 		Estado.PERSEGUIR:
-			_virar_para(para_alvo, delta, 4.0)
-			plano = para_alvo.normalized() * velocidade_trote * _fator_fase()
+			var rumo := para_alvo.normalized()
+			if _t_desvio > 0.0:
+				_t_desvio -= delta
+				rumo = _desvio
+			_virar_para(rumo, delta, 4.0 if _t_desvio <= 0.0 else 8.0)
+			plano = rumo * velocidade_trote * _fator_fase()
 			_cooldown_investida -= delta
 			if distancia < distancia_golpe:
 				_mudar(Estado.ERGUER)
@@ -174,8 +201,14 @@ func _physics_process(delta: float) -> void:
 			plano = _dir_investida * velocidade_investida * _fator_fase()
 			if not _acertou_investida and _alvo and distancia < 1.9:
 				_acertou_investida = true
-				if _alvo.has_method("levar_dano"):
-					_alvo.levar_dano(dano_investida, _dir_investida)
+				_acertar_investida(para_alvo)
+		Estado.FREAR:
+			# derrapa até parar depois de atropelar o Teseu
+			var k := clampf(1.0 - _t / 0.45, 0.0, 1.0)
+			plano = _dir_investida * velocidade_investida * 0.5 * k
+			if _t > 0.9:
+				_cooldown_investida = randf_range(2.5, 4.0) / _fator_fase()
+				_mudar(Estado.PERSEGUIR)
 		Estado.ATORDOADO:
 			if _t > tempo_atordoado / _fator_fase():
 				_mudar(Estado.RECUPERAR)
@@ -197,6 +230,8 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	_som_cascos(delta)
 
+	if estado == Estado.PERSEGUIR:
+		_verificar_preso(plano, delta)
 	if estado == Estado.INVESTIDA:
 		_distancia_investida += plano.length() * delta
 		if _bateu_em_parede() or _distancia_investida > 22.0:
@@ -205,6 +240,58 @@ func _physics_process(delta: float) -> void:
 			Som.tocar("parede")
 			Efeitos.poeira(global_position + _dir_investida * 1.6 + Vector3.UP * 0.6, 16, 0.7)
 	_animar(delta)
+
+
+## Investida acertou: o Teseu é jogado para o lado em que estava e o
+## Minotauro freia (não bate na parede, então não fica atordoado).
+func _acertar_investida(para_alvo: Vector3) -> void:
+	var lado := Vector3(-_dir_investida.z, 0, _dir_investida.x)
+	if para_alvo.dot(lado) < 0.0:
+		lado = -lado
+	var empurrao := (lado * 0.85 + _dir_investida * 0.35).normalized()
+	if _alvo.has_method("levar_dano"):
+		_alvo.levar_dano(dano_investida, empurrao)
+	if _alvo.has_method("arremessar"):
+		_alvo.arremessar(empurrao * forca_arremesso)
+	_tremer_camera(0.35)
+	Som.tocar("impacto", -3.0)
+	Efeitos.poeira(global_position + _dir_investida * 1.2, 12, 0.6)
+	_mudar(Estado.FREAR)
+
+
+## Se ele tenta andar e quase não sai do lugar por um tempo (preso num canto
+## atrás de uma pilastra), escolhe um rumo de fuga: afasta da parede/pilastra
+## e contorna para o lado do Teseu.
+func _verificar_preso(plano: Vector3, delta: float) -> void:
+	if plano.length() < 0.5 or _t_desvio > 0.0:
+		_t_preso = 0.0
+		return
+	var andou := get_real_velocity()
+	andou.y = 0
+	if andou.length() > plano.length() * 0.35:
+		_t_preso = maxf(_t_preso - delta, 0.0)
+		return
+	_t_preso += delta
+	if _t_preso < 0.3:
+		return
+	_t_preso = 0.0
+	var normal := Vector3.ZERO
+	for i in get_slide_collision_count():
+		var col := get_slide_collision(i)
+		var obj := col.get_collider()
+		if obj and (obj as Node).is_in_group("jogador"):
+			continue
+		var n := col.get_normal()
+		n.y = 0
+		normal += n
+	if normal.length() < 0.01:
+		normal = -plano
+	normal = normal.normalized()
+	var lado := Vector3(-normal.z, 0, normal.x)
+	if _alvo and (_alvo.global_position - global_position).dot(lado) < 0.0:
+		lado = -lado
+	_desvio = (normal * 0.7 + lado).normalized()
+	_t_desvio = 0.8
 
 
 func _virar_para(dir: Vector3, delta: float, vel: float) -> void:
@@ -429,6 +516,9 @@ func _animar(delta: float) -> void:
 			braco_dir_x = -1.25
 		Estado.RECUPERAR:
 			braco_dir_x = -0.6
+		Estado.FREAR:
+			tronco_x = -0.3                             # empina freando
+			cabeca_x = -0.2
 		_:
 			tronco_x = sin(_anim * 2.0) * 0.04
 	var vel_braco := 30.0 if estado == Estado.GOLPE else 10.0

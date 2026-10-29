@@ -16,27 +16,27 @@ size = Vector3(3, 1.8, 0.25)
 [sub_resource type="BoxShape3D" id="BoxShape3D_cl4ap"]
 size = Vector3(2.5, 1.8, 0.12)
 
-[node name="Cela" type="Node3D" unique_id=1850998540]
+[node name="Cela" type="Node3D" unique_id=1474575117]
 script = ExtResource("1_8f1m4")
 cena_prisioneiro = ExtResource("2_5yb0s")
 
 [node name="Modelo" type="Node3D" parent="." unique_id=181666166 instance=ExtResource("3_vf8tx")]
 
-[node name="Corpo" type="StaticBody3D" parent="." unique_id=1913819697]
+[node name="Corpo" type="StaticBody3D" parent="." unique_id=1046718643]
 collision_mask = 0
 
-[node name="Lado" type="CollisionShape3D" parent="Corpo" unique_id=1889545076]
+[node name="Lado" type="CollisionShape3D" parent="Corpo" unique_id=1473048257]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.375, 0.9, -0.75)
 shape = SubResource("BoxShape3D_apnu0")
 
-[node name="Lado2" type="CollisionShape3D" parent="Corpo" unique_id=8266241]
+[node name="Lado2" type="CollisionShape3D" parent="Corpo" unique_id=877924691]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.375, 0.9, -0.75)
 shape = SubResource("BoxShape3D_hak62")
 
-[node name="Fundo" type="CollisionShape3D" parent="Corpo" unique_id=635784323]
+[node name="Fundo" type="CollisionShape3D" parent="Corpo" unique_id=2133486326]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, -1.375)
 shape = SubResource("BoxShape3D_0yjmn")
 
-[node name="BloqueioGrade" type="CollisionShape3D" parent="Corpo" unique_id=815432411]
+[node name="BloqueioGrade" type="CollisionShape3D" parent="Corpo" unique_id=425866502]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 shape = SubResource("BoxShape3D_cl4ap")

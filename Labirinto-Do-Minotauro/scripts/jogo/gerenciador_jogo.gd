@@ -9,11 +9,14 @@ extends Node
 ##
 ## Atalhos: R = reiniciar a sala atual | Esc = menu
 ##
-## SORTEIO DOS PORTAIS (quando uma sala é vencida). O jogador NÃO vê o destino;
-## as regras abaixo só garantem que o jogo sempre pode ser terminado:
-##   - se ainda falta enigma: pelo menos 1 porta leva a um enigma pendente;
-##   - com os 3 enigmas feitos: 1 porta leva ao Minotauro;
-##   - as outras portas: sala de combate aleatória (às vezes outro enigma).
+## SORTEIO DOS PORTAIS (quando uma sala é vencida). O jogador NÃO vê o destino.
+## A partida tem sempre 10 salas: a 10ª é a arena do Minotauro.
+##   - saindo da 9ª sala: todos os portais levam ao Minotauro;
+##   - se faltam tantos enigmas quanto salas antes da arena: todos os portais
+##     levam a enigmas (assim os 3 enigmas sempre ficam prontos até a 9ª);
+##   - senão: pelo menos 1 portal leva a um enigma pendente (se houver) e os
+##     outros a salas de combate (às vezes outro enigma);
+##   - um portal nunca leva para a própria sala nem a enigma já resolvido.
 
 signal novelo_mudou(restante: int)
 signal prisioneiros_mudou(libertados: int, total: int)
@@ -25,6 +28,8 @@ signal chefe_apareceu(chefe: Node)
 signal fim_de_jogo(vitoria: bool)
 ## Liga/desliga as faixas pretas de cinema (cena da Ariadne).
 signal cinematica(ligada: bool)
+## Número da sala atual na partida (1 a 10).
+signal salas_mudou(numero: int, total: int)
 
 ## Comprimento do novelo de Ariadne = quantas vezes Teseu pode voltar.
 @export var novelo_inicial: int = 3
@@ -32,6 +37,8 @@ signal cinematica(ligada: bool)
 @export var puzzles_para_abrir_arena: int = 3
 ## Total de jovens atenienses presos (7 rapazes + 7 moças, menos Teseu).
 @export var total_prisioneiros: int = 13
+## Em qual sala da partida fica o Minotauro (a entrada não conta).
+@export var sala_do_minotauro: int = 10
 ## Chance de uma porta "extra" levar a outro enigma em vez de combate.
 @export_range(0.0, 1.0) var chance_enigma_extra: float = 0.3
 ## Semente do sorteio (0 = aleatório a cada partida).
@@ -44,6 +51,8 @@ signal cinematica(ligada: bool)
 var novelo: int
 var prisioneiros_libertados: int = 0
 var puzzles_concluidos: Array[String] = []
+## Quantas salas o Teseu já atravessou (a entrada não conta).
+var salas_visitadas: int = 0
 var checkpoint: Vector3 = Vector3.ZERO
 var sala_atual: Node = null
 var area_atual: Node = null
@@ -237,19 +246,21 @@ func sortear_destinos(sala: Node) -> void:
 	var pendentes := puzzles_pendentes(sala)
 	pendentes.shuffle()
 	combates.shuffle()
+	var proxima := salas_visitadas + 1                  # número da sala de destino
+	var vagas := sala_do_minotauro - proxima            # salas que ainda cabem antes da arena
 	for i in portas.size():
 		var destino: Node = null
-		if i == 0:
-			if not pendentes.is_empty():
-				destino = pendentes[0]
-			elif arena:
-				destino = arena
+		if proxima >= sala_do_minotauro and arena:
+			destino = arena
+		elif not pendentes.is_empty() and (i == 0 or pendentes.size() >= vagas):
+			# um portal sempre leva a enigma; se o tempo está acabando, todos levam
+			destino = pendentes[i % pendentes.size()]
 		elif pendentes.size() > 1 and randf() < chance_enigma_extra:
 			destino = pendentes[i % pendentes.size()]
 		if destino == null and not combates.is_empty():
 			destino = combates[i % combates.size()]
-		if destino == null and arena and pendentes.is_empty():
-			destino = arena
+		if destino == null and not pendentes.is_empty():
+			destino = pendentes[0]
 		portas[i].definir_destino(destino)
 		portas[i].ativar(destino != null)
 
@@ -270,6 +281,9 @@ func teleportar(destino: Node) -> void:
 		_jogador.global_position = chegada
 		_jogador.velocity = Vector3.ZERO
 	checkpoint = chegada
+	if area_atual != destino and destino.tipo != "inicio":
+		salas_visitadas += 1
+		salas_mudou.emit(salas_visitadas, sala_do_minotauro)
 	area_atual = destino
 	var cam := get_viewport().get_camera_3d()
 	if cam and cam.has_method("encaixar"):
@@ -301,7 +315,11 @@ func registrar_puzzle_concluido(nome: String) -> void:
 	puzzles_concluidos.append(nome)
 	puzzles_mudou.emit(puzzles_concluidos.size(), puzzles_para_abrir_arena)
 	if puzzles_concluidos.size() >= puzzles_para_abrir_arena:
-		mensagem.emit("Um rugido ecoa pelo labirinto...\nAgora um dos portais leva ao Minotauro.", 4.0)
+		var faltam_salas := sala_do_minotauro - salas_visitadas - 1
+		if faltam_salas <= 0:
+			mensagem.emit("Um rugido ecoa pelo labirinto...\nTodos os portais levam ao Minotauro!", 4.0)
+		else:
+			mensagem.emit("Um rugido ecoa pelo labirinto...\nO Minotauro espera na sala %d." % sala_do_minotauro, 4.0)
 	else:
 		var faltam := puzzles_para_abrir_arena - puzzles_concluidos.size()
 		mensagem.emit("%s libertada! Faltam %d enigma(s)." % [nome, faltam], 3.5)

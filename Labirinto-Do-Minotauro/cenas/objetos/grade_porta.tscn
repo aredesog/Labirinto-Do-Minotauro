@@ -6,14 +6,14 @@
 [sub_resource type="BoxShape3D" id="BoxShape3D_0rxor"]
 size = Vector3(2.2, 2.5, 0.7)
 
-[node name="GradePorta" type="Node3D" unique_id=1756053631]
+[node name="GradePorta" type="Node3D" unique_id=945354341]
 script = ExtResource("1_i3r75")
 
 [node name="Modelo" type="Node3D" parent="." unique_id=314119585 instance=ExtResource("2_mdjyi")]
 
-[node name="Corpo" type="StaticBody3D" parent="." unique_id=78707583]
+[node name="Corpo" type="StaticBody3D" parent="." unique_id=2062673714]
 collision_mask = 0
 
-[node name="Bloqueio" type="CollisionShape3D" parent="Corpo" unique_id=131576137]
+[node name="Bloqueio" type="CollisionShape3D" parent="Corpo" unique_id=2103346527]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
 shape = SubResource("BoxShape3D_0rxor")

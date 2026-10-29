@@ -3,7 +3,8 @@ extends Node3D
 ## Pedra jogada pelo MinitaurinhoArremessador. Anda em linha reta (com um
 ## pequeno arco visual) e quebra ao bater em parede, no escudo ou na espada.
 
-@export var dano: int = 1
+## Em meios corações: 2 = um coração inteiro. O escudo bloqueia tudo.
+@export var dano: int = 2
 @export var duracao_max: float = 3.0
 
 var _dir := Vector3.FORWARD
@@ -79,7 +80,7 @@ func _physics_process(delta: float) -> void:
 		var d := jogador.global_position + Vector3.UP * 0.6 - global_position
 		d.y *= 0.5
 		if d.length() < 0.55:
-			jogador.levar_dano(dano, _dir)
+			jogador.levar_dano(dano, _dir, true)
 			quebrar()
 
 

@@ -33,12 +33,15 @@ func portas() -> Array[Node]:
 	return lista
 
 
-## Ponto de chegada: na frente de uma porta sorteada (ou num marcador "Chegada").
+## Ponto de chegada: o marcador "Chegada" na entrada sul da sala (todas as
+## salas têm portais a oeste, norte e leste e a entrada embaixo).
 func ponto_de_chegada() -> Vector3:
+	var m := find_child("Chegada", true, false) as Node3D
+	if m:
+		return m.global_position
 	var lista := portas()
 	if lista.is_empty():
-		var m := find_child("Chegada", true, false) as Node3D
-		return m.global_position if m else global_position + Vector3.UP * 0.1
+		return global_position + Vector3.UP * 0.1
 	return lista[randi() % lista.size()].entrada_global()
 
 

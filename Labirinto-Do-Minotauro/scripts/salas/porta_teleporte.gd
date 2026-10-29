@@ -39,7 +39,12 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	var antes := _cooldown
 	_cooldown = max(_cooldown - delta, 0.0)
+	# se o Teseu já estava parado dentro do portal quando ele acendeu
+	if antes > 0.0 and _cooldown <= 0.0 and ativa and _area:
+		for corpo in _area.get_overlapping_bodies():
+			_ao_atravessar(corpo)
 	if _icone and _icone.visible:
 		_icone.rotation.y += delta * 2.0
 		_icone.position.y = 2.35 + sin(Time.get_ticks_msec() * 0.004) * 0.08

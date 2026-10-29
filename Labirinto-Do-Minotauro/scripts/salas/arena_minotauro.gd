@@ -1,10 +1,12 @@
 class_name ArenaMinotauro
 extends AreaSala
 ## Arena final. Ao chegar, o portão fica trancado e a luta começa.
-## Se o Teseu morrer aqui, a luta recomeça (o novelo diminui).
+## Se o Teseu morrer aqui, a luta recomeça (o novelo diminui) e o Minotauro
+## recupera só 25% da vida, não a vida toda.
 
 var _chefe: Minotauro
 var _vencida := false
+var _luta_comecou := false
 
 
 func _ready() -> void:
@@ -31,7 +33,9 @@ func iniciar() -> void:
 		jogo.mensagem.emit("O MINOTAURO!\nCuidado com a investida: faça ele bater nas colunas!", 3.5)
 	Som.musica("chefe", 0.6)
 	if _chefe:
-		_chefe.resetar()
+		if not _luta_comecou:
+			_chefe.resetar()
+		_luta_comecou = true
 		_chefe.comecar()
 
 
@@ -42,7 +46,7 @@ func reiniciar() -> void:
 		if i != _chefe and is_instance_valid(i):
 			i.queue_free()
 	if _chefe:
-		_chefe.resetar()
+		_chefe.recuperar_parcial()
 
 
 func _ao_derrotar() -> void:

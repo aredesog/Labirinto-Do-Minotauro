@@ -74,13 +74,22 @@ func tipos_destino(a: Node) -> Array:
 
 
 ## Confere a regra do sorteio depois de vencer uma sala.
+## Regra: a 10ª sala é sempre a arena; enigmas são forçados quando o
+## número de enigmas pendentes alcança o de salas que sobram antes dela.
 func checar_sorteio(a: Node, rotulo: String) -> void:
 	var tipos := tipos_destino(a)
+	var proxima: int = jogo.salas_visitadas + 1
+	var vagas: int = jogo.sala_do_minotauro - proxima
+	var pend: int = jogo.puzzles_pendentes(a).size()
 	checar(tipos.size() == a.portas().size(), "%s: todos os %d portais acendem" % [rotulo, a.portas().size()])
-	if jogo.puzzles_pendentes().size() > 0:
-		checar("puzzle" in tipos, "%s: há portal para um enigma pendente %s" % [rotulo, str(tipos)])
+	if proxima >= jogo.sala_do_minotauro:
+		checar(tipos.all(func(t): return t == "chefe"), "%s: saindo da 9ª sala todos levam ao Minotauro %s" % [rotulo, str(tipos)])
 	else:
-		checar("chefe" in tipos, "%s: com 3 enigmas há portal para o Minotauro %s" % [rotulo, str(tipos)])
+		checar(not ("chefe" in tipos), "%s: Minotauro só na sala %d (próxima=%d) %s" % [rotulo, jogo.sala_do_minotauro, proxima, str(tipos)])
+		if pend > 0:
+			checar("puzzle" in tipos, "%s: há portal para um enigma pendente %s" % [rotulo, str(tipos)])
+		if pend > 0 and pend >= vagas:
+			checar(tipos.all(func(t): return t == "puzzle"), "%s: faltam %d enigmas e %d salas -> todos levam a enigma %s" % [rotulo, pend, vagas, str(tipos)])
 	for p in portas_ativas(a):
 		checar(p.destino != a, "%s: portal não leva para a mesma sala" % rotulo)
 		if p.destino.tipo == "puzzle":
@@ -103,9 +112,21 @@ func _rodar() -> void:
 	checar_sorteio(inicio, "início")
 	for id in ["A", "B", "C", "D", "E", "F"]:
 		var n: int = sala(id).portas().size()
-		checar(n == 2 or n == 3, "sala %s tem %d portas-portal" % [id, n])
+		checar(n == 3, "sala %s tem 3 portais (oeste, norte, leste): %d" % [id, n])
+		var lados: Array = sala(id).portas().map(func(p): return String(p.name))
+		lados.sort()
+		checar(lados == ["PortaL", "PortaN", "PortaO"], "sala %s: portais em %s, entrada embaixo" % [id, str(lados)])
 	checar(fase.get_node("HUD/Desenho").vida == 10, "HUD: 5 corações (10 meios)")
 	checar(Som.faixa_atual() == "exploracao", "música de exploração na entrada")
+	# simulação do sorteio no fim da partida (depois volta ao normal)
+	jogo.salas_visitadas = 7
+	jogo.sortear_destinos(inicio)
+	checar(tipos_destino(inicio).all(func(t): return t == "puzzle"), "sala 8 com 3 enigmas faltando: todos os portais levam a enigma")
+	jogo.salas_visitadas = 9
+	jogo.sortear_destinos(inicio)
+	checar(tipos_destino(inicio).all(func(t): return t == "chefe"), "depois da 9ª sala: todos os portais levam ao Minotauro")
+	jogo.salas_visitadas = 0
+	jogo.sortear_destinos(inicio)
 	await esperar(1.0)
 	await foto("01_inicio_portais")
 
@@ -116,11 +137,14 @@ func _rodar() -> void:
 	teseu.global_position = porta.global_position - porta.global_basis.z * 0.5 + Vector3.UP * 0.1
 	await esperar(0.9)
 	checar(destino.contem(teseu.global_position), "o portal levou o Teseu para '%s'" % destino.nome_sala)
+	checar(teseu.global_position.z - destino.global_position.z > 3.0, "Teseu chega pela entrada de baixo")
+	checar(jogo.salas_visitadas == 1 and fase.get_node("HUD/Desenho").sala_numero == 1, "HUD conta a sala 1 de 10")
 	checar(destino.estado == 1, "ao chegar, o combate começa")
 	checar(grades_fechadas(destino) == destino.portas().size(), "as portas da sala fecham")
 	checar(portas_ativas(destino).is_empty(), "portais apagados durante o combate")
 	checar(inimigos().size() > 0, "surgem minitaurinhos")
-	checar(inimigos()[0].vida == 2, "minitaurinho tem 2 de vida (65%)")
+	var normais := inimigos().filter(func(n): return not (n is MinitaurinhoArremessador))
+	checar(normais.size() > 0 and normais[0].vida == 3, "minitaurinho normal tem 3 de vida")
 	checar(Som.faixa_atual() == "combate", "música de combate durante a luta")
 	await esperar(0.4)
 	await foto("02_chegada_" + destino.name)
@@ -289,6 +313,10 @@ func _rodar() -> void:
 
 	# ------------------------------------------------ Minotauro
 	print("== Arena ==")
+	# a partida chega à 9ª sala: ao vencê-la, todos os portais levam ao Minotauro
+	jogo.salas_visitadas = 9
+	jogo.sortear_destinos(b2)
+	checar_sorteio(b2, "9ª sala")
 	var p_chefe: Node3D = null
 	for p in portas_ativas(b2):
 		if p.destino.tipo == "chefe":
@@ -347,7 +375,8 @@ func _combate_novo(f: Node) -> void:
 	pedra2.global_position = teseu.global_position + Vector3(0, 1.1, -4.0)
 	pedra2.lancar(Vector3.BACK, 7.5)
 	await esperar(0.8)
-	checar(teseu.vida == vida0 - 1, "pedra sem escudo tira meio coração (vida=%d)" % teseu.vida)
+	checar(teseu.vida == vida0 - 2, "pedra sem escudo tira 1 coração (vida=%d)" % teseu.vida)
+	checar(arr[0].vida == 2, "arremessador tem 2 de vida")
 	# espada quebra a pedra
 	var pedra3 := PedraArremessada.new()
 	f.add_child(pedra3)
@@ -506,9 +535,64 @@ func _luta_chefe(arena: Node) -> void:
 	await esperar(0.1)
 	checar(v0 - chefe.vida == 2, "atordoado, a espada tira o dobro (%d -> %d)" % [v0, chefe.vida])
 
+	# investida que ACERTA: joga o Teseu para o lado e o Minotauro freia
+	await esperar(2.6)
+	teseu.vida = 99
+	teseu._invulneravel = 0.0
+	chefe.global_position = arena.global_position + Vector3(3.5, 0.05, 0)
+	chefe.rotation.y = -PI / 2
+	teseu.global_position = arena.global_position + Vector3(-1.0, 0.1, 0.25)
+	var z0: float = teseu.global_position.z
+	chefe._mudar(2)
+	chefe._cooldown_investida = 0.0
+	var freou := false
+	var atordoou := false
+	var vida_antes: int = teseu.vida
+	for k in 50:
+		await esperar(0.1)
+		if chefe.estado == 10:
+			freou = true
+		if chefe.estado == 5:
+			atordoou = true
+		if freou and chefe.estado == 2:
+			break
+	checar(freou and not atordoou, "investida que acerta: ele freia e NÃO fica atordoado")
+	checar(teseu.vida < vida_antes, "investida fere o Teseu")
+	checar(absf(teseu.global_position.z - z0) > 1.2, "investida joga o Teseu para o lado (desvio %.1f m)" % absf(teseu.global_position.z - z0))
+
+	# morreu na arena: o Minotauro recupera só 25%
+	chefe.vida = 8
+	teseu.vida = 1
+	teseu._invulneravel = 0.0
+	teseu.levar_dano(1)
+	await esperar(0.5)
+	checar(chefe.vida == 14, "Teseu morreu: Minotauro recupera só 25%% (8 -> %d de 24)" % chefe.vida)
+	await esperar(2.2)
+
+	# preso atrás da pilastra do canto: tem que sair sozinho
+	teseu.vida = 99
+	teseu._invulneravel = 99.0
+	teseu.global_position = arena.global_position + Vector3(0, 0.1, 1.0)
+	chefe.global_position = arena.global_position + Vector3(5.9, 0.05, -5.9)
+	chefe._mudar(2)
+	chefe._cooldown_investida = 99.0
+	var p0: Vector3 = chefe.global_position
+	var saiu := false
+	for k in 50:
+		await esperar(0.1)
+		if chefe.global_position.distance_to(p0) > 2.5 or chefe.estado in [6, 7]:
+			saiu = true
+			break
+	checar(saiu, "Minotauro não fica preso na pilastra do canto")
+	teseu._invulneravel = 0.0
+	teseu.vida = 99
+
 	# fase 2
+	chefe._mudar(2)
 	chefe.vida = chefe.vida_maxima / 2 + 1
 	chefe._invulneravel = 0.0
+	teseu.global_position = chefe.global_position + chefe.global_basis.z * 2.0 + Vector3.UP * 0.1
+	teseu._direcao_olhar = -chefe.global_basis.z
 	teseu._cooldown_ataque = 0.0
 	teseu._atacar()
 	await esperar(0.3)

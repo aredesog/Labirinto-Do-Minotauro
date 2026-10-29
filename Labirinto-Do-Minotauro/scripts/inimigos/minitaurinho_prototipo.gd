@@ -6,8 +6,8 @@ extends CharacterBody3D
 signal morreu(quem: Minitaurinho)
 
 @export var velocidade: float = 2.6
-## Vida reduzida para ~65% (era 3): 2 golpes de espada.
-@export var vida: int = 2
+## 3 golpes de espada (o arremessador usa 2, definido na cena dele).
+@export var vida: int = 3
 ## Tempo parado depois de surgir (dá chance ao jogador de se posicionar).
 @export var espera_ao_surgir: float = 0.9
 @export var dano: int = 1

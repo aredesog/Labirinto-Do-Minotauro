@@ -22,6 +22,8 @@ var enigmas := 0
 var enigmas_total := 3
 var atenienses := 0
 var atenienses_total := 13
+var sala_numero := 0
+var sala_total := 10
 var chefe_vida := 0
 var chefe_maximo := 0
 var chefe_ativo := false
@@ -61,6 +63,11 @@ func definir_vida(v: int, m: int) -> void:
 	vida_maxima = m
 
 
+func definir_sala(n: int, total: int) -> void:
+	sala_numero = n
+	sala_total = total
+
+
 func definir_novelo(n: int, total: int) -> void:
 	novelo = n
 	novelo_total = total
@@ -94,6 +101,11 @@ func _draw() -> void:
 	_desenhar_novelos(Vector2(32, 72))
 	_desenhar_itens(Vector2(size.x - 60, 52))
 	_desenhar_enigmas(Vector2(size.x - 146, 140))
+	if sala_numero > 0:
+		var txt := "SALA %d / %d" % [sala_numero, sala_total]
+		var cor := Color("#ff8a7a") if sala_numero >= sala_total else CREME
+		draw_string(_fonte, Vector2(size.x - 152, 202), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, CONTORNO)
+		draw_string(_fonte, Vector2(size.x - 153, 201), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, cor)
 	_desenhar_contador(Vector2(size.x - 40, size.y - 44))
 	if chefe_ativo:
 		_desenhar_barra_chefe()

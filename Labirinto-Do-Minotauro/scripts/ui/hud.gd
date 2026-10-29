@@ -71,6 +71,7 @@ func _ready() -> void:
 		_jogo.chefe_apareceu.connect(_ao_aparecer_chefe)
 		_jogo.fim_de_jogo.connect(_ao_terminar)
 		_jogo.cinematica.connect(_ao_cinematica)
+		_jogo.salas_mudou.connect(_desenho.definir_sala)
 		_desenho.definir_novelo(_jogo.novelo, _jogo.novelo_inicial)
 		_desenho.definir_atenienses(_jogo.prisioneiros_libertados, _jogo.total_prisioneiros)
 		_desenho.definir_enigmas(_jogo.puzzles_concluidos.size(), _jogo.puzzles_para_abrir_arena)
