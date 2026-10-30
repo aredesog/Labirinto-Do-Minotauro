@@ -3,12 +3,12 @@
 [ext_resource type="Script" path="res://scripts/puzzles/estatuas/placa_pressao.gd" id="1_a7clp"]
 [ext_resource type="PackedScene" path="res://assets/modelos/puzzles/placa_pressao.glb" id="2_kf2dj"]
 
-[node name="PlacaPressao" type="Node3D" unique_id=689580717]
+[node name="PlacaPressao" type="Node3D" unique_id=1962691677]
 script = ExtResource("1_a7clp")
 
 [node name="Modelo" type="Node3D" parent="." unique_id=561161149 instance=ExtResource("2_kf2dj")]
 
-[node name="Brilho" type="OmniLight3D" parent="." unique_id=1169203708]
+[node name="Brilho" type="OmniLight3D" parent="." unique_id=685047355]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
 visible = false
 light_color = Color(1, 0.84313726, 0.41568628, 1)

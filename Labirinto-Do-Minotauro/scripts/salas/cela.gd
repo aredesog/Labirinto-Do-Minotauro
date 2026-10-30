@@ -5,6 +5,8 @@ extends Node3D
 
 @export_range(1, 7) var quantidade_prisioneiros: int = 4
 @export var cena_prisioneiro: PackedScene
+## Moças e rapazes se alternam na cela (7 + 7 no total, menos o Teseu).
+@export var cena_prisioneira: PackedScene
 @export var cores_tunica: Array[Color] = [
 	Color("#f4ecd8"), Color("#9cc5e8"), Color("#e8a3a3"), Color("#b9d99a"),
 	Color("#f2d27a"), Color("#c9a8e0"), Color("#f0b98a"),
@@ -28,7 +30,8 @@ func _criar_prisioneiros() -> void:
 		return
 	var n := quantidade_prisioneiros
 	for i in n:
-		var p := cena_prisioneiro.instantiate() as Node3D
+		var cena := cena_prisioneira if i % 2 == 1 and cena_prisioneira else cena_prisioneiro
+		var p := cena.instantiate() as Node3D
 		add_child(p)
 		# Distribui na largura da cela (2,5 m), em duas fileiras.
 		var x := -1.0 + 2.0 * (float(i) / maxi(n - 1, 1))

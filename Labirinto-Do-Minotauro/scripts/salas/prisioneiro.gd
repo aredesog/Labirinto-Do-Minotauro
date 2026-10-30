@@ -6,6 +6,11 @@ extends Node3D
 var _livre := false
 var _tempo := 0.0
 var _fase := randf() * TAU
+var _anim: AnimBoneco
+
+
+func _ready() -> void:
+	_anim = AnimBoneco.new(self)
 
 
 func definir_cor(cor: Color) -> void:
@@ -23,8 +28,20 @@ func definir_cor(cor: Color) -> void:
 func _process(delta: float) -> void:
 	_tempo += delta
 	if not _livre:
-		# balança de nervoso dentro da cela
+		# balança de nervoso dentro da cela, mãos pedindo ajuda
 		rotation.z = sin(_tempo * 3.0 + _fase) * 0.08
+		if _anim:
+			_anim.travar_braco_e = true
+			_anim.travar_braco_d = true
+			var a := -1.0 + sin(_tempo * 5.0 + _fase) * 0.35
+			_anim.posar_braco(_anim.braco_e, a, delta)
+			_anim.posar_braco(_anim.braco_d, -1.0 - sin(_tempo * 5.0 + _fase) * 0.35, delta)
+			_anim.atualizar(delta, 0.0)
+	elif _anim:
+		# livre: braços para o alto, comemorando
+		_anim.posar_braco(_anim.braco_e, -2.7 + sin(_tempo * 12.0) * 0.3, delta)
+		_anim.posar_braco(_anim.braco_d, -2.7 - sin(_tempo * 12.0) * 0.3, delta)
+		_anim.atualizar(delta, 0.6)
 
 
 func libertar(atraso: float) -> void:

@@ -214,7 +214,8 @@ func _ao_aparecer_chefe(chefe: Node) -> void:
 		return
 	if not chefe.vida_mudou.is_connected(_desenho.definir_chefe):
 		chefe.vida_mudou.connect(_desenho.definir_chefe)
-	_desenho.definir_chefe(chefe.vida_maxima, chefe.vida_maxima)
+	# a vida atual (depois de morrer na arena ele só recupera 25%, não tudo)
+	_desenho.definir_chefe(chefe.vida, chefe.vida_maxima)
 
 
 # --------------------------------------------------------------------------

@@ -21,12 +21,16 @@ var _atordoado := 0.0
 var _morto := false
 
 @onready var _visual: Node3D = get_node_or_null("Visual")
+var _anim: AnimBoneco
+var _golpe := 0.0
 
 
 func _ready() -> void:
 	add_to_group("inimigo")
 	_alvo = get_tree().get_first_node_in_group("jogador")
 	_espera = espera_ao_surgir
+	if _visual:
+		_anim = AnimBoneco.new(_visual)
 	# surge do chão
 	if _visual:
 		_visual.scale = Vector3.ONE * 0.01
@@ -60,6 +64,23 @@ func _physics_process(delta: float) -> void:
 
 	_comportamento(dir, distancia, delta)
 	move_and_slide()
+	_animar(delta)
+
+
+func _animar(delta: float) -> void:
+	if _anim == null:
+		return
+	_golpe = maxf(_golpe - delta, 0.0)
+	_anim.travar_braco_d = _golpe > 0.0 or _braco_ocupado()
+	if _golpe > 0.0:
+		_anim.posar_braco(_anim.braco_d, -2.3 if _golpe > 0.16 else -0.3, delta, 30.0)
+	var h := Vector2(velocity.x, velocity.z).length()
+	_anim.atualizar(delta, clampf(h / maxf(velocidade, 0.1), 0.0, 1.0), 13.0)
+
+
+## O arremessador usa o braço para erguer a pedra.
+func _braco_ocupado() -> bool:
+	return false
 
 
 ## Corpo a corpo: corre até o Teseu e dá cabeçada. (O arremessador sobrescreve.)
@@ -76,6 +97,7 @@ func _comportamento(dir: Vector3, distancia: float, _delta: float) -> void:
 
 func _atacar(dir: Vector3) -> void:
 	_cooldown = intervalo_ataque
+	_golpe = 0.32
 	Som.tocar("grunhido", 0.0, 0.15)
 	if _visual:
 		var tw := create_tween()

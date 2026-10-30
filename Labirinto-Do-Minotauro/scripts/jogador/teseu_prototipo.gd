@@ -53,6 +53,8 @@ const ESPADA_DESCANSO := Vector3(0.45, -1.05, 0.0)
 @onready var _espada: Node3D = get_node_or_null("Visual/Espada")
 @onready var _novelo: Node3D = get_node_or_null("Visual/Novelo")
 @onready var _escudo: Node3D = get_node_or_null("Visual/Escudo")
+var _anim: AnimBoneco
+var _golpe := 0.0
 
 
 func _ready() -> void:
@@ -60,6 +62,8 @@ func _ready() -> void:
 	vida = vida_maxima
 	vida_mudou.emit(vida, vida_maxima)
 	_criar_rastro()
+	if _visual:
+		_anim = AnimBoneco.new(_visual)
 	if _espada:
 		_espada.rotation = ESPADA_DESCANSO
 	await get_tree().process_frame
@@ -102,6 +106,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	_verificar_empurrao(direcao, delta)
 	_passos(direcao, delta)
+	_animar(delta)
 
 	if not _controle_ativo:
 		return
@@ -134,6 +139,7 @@ func _verificar_empurrao(direcao: Vector3, delta: float) -> void:
 
 func _atacar() -> void:
 	_cooldown_ataque = 0.32
+	_golpe = 0.28
 	Som.tocar("espada")
 	# golpe em arco (da direita para a esquerda), com rastro de corte
 	if _espada:
@@ -252,6 +258,22 @@ func levar_dano(quantidade: int, direcao: Vector3 = Vector3.ZERO, bloqueio_total
 		var jogo := get_tree().get_first_node_in_group("jogo")
 		if jogo:
 			jogo.jogador_morreu()
+
+
+## Pernas e braços do modelo (pivôs do Blender): anda, ergue o escudo, golpeia.
+func _animar(delta: float) -> void:
+	if _anim == null:
+		return
+	_golpe = maxf(_golpe - delta, 0.0)
+	var h := Vector2(velocity.x, velocity.z).length()
+	_anim.travar_braco_e = defendendo
+	_anim.travar_braco_d = _golpe > 0.0
+	if defendendo:
+		_anim.posar_braco(_anim.braco_e, -1.45, delta)
+	if _golpe > 0.0:
+		# braço da espada: sobe e desce acompanhando o arco do golpe
+		_anim.posar_braco(_anim.braco_d, -1.9 if _golpe > 0.14 else -0.6, delta, 30.0)
+	_anim.atualizar(delta, clampf(h / velocidade, 0.0, 1.0))
 
 
 ## O escudo pega o golpe? (direcao = para onde o golpe empurra o Teseu)

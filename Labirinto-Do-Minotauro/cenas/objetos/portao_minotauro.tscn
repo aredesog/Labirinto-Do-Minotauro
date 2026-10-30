@@ -12,22 +12,22 @@ size = Vector3(0.5, 3, 0.5)
 [sub_resource type="BoxShape3D" id="BoxShape3D_wdptx"]
 size = Vector3(0.5, 3, 0.5)
 
-[node name="PortaoMinotauro" type="Node3D" unique_id=1549720743]
+[node name="PortaoMinotauro" type="Node3D" unique_id=751579234]
 script = ExtResource("1_3hi3l")
 
 [node name="Modelo" type="Node3D" parent="." unique_id=542731241 instance=ExtResource("2_o7ma6")]
 
-[node name="Corpo" type="StaticBody3D" parent="." unique_id=1426515218]
+[node name="Corpo" type="StaticBody3D" parent="." unique_id=1099280175]
 collision_mask = 0
 
-[node name="Bloqueio" type="CollisionShape3D" parent="Corpo" unique_id=622424332]
+[node name="Bloqueio" type="CollisionShape3D" parent="Corpo" unique_id=701333389]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 0)
 shape = SubResource("BoxShape3D_22hdo")
 
-[node name="Coluna" type="CollisionShape3D" parent="Corpo" unique_id=79597748]
+[node name="Coluna" type="CollisionShape3D" parent="Corpo" unique_id=37602655]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.75, 1.5, 0)
 shape = SubResource("BoxShape3D_7muon")
 
-[node name="Coluna2" type="CollisionShape3D" parent="Corpo" unique_id=712985980]
+[node name="Coluna2" type="CollisionShape3D" parent="Corpo" unique_id=764953937]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.75, 1.5, 0)
 shape = SubResource("BoxShape3D_wdptx")

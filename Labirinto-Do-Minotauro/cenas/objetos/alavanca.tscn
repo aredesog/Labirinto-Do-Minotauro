@@ -6,14 +6,14 @@
 [sub_resource type="BoxShape3D" id="BoxShape3D_5vbw2"]
 size = Vector3(0.5, 0.4, 0.4)
 
-[node name="Alavanca" type="Node3D" unique_id=1276451548]
+[node name="Alavanca" type="Node3D" unique_id=915259591]
 script = ExtResource("1_cehwn")
 
 [node name="Modelo" type="Node3D" parent="." unique_id=1306307854 instance=ExtResource("2_n7pql")]
 
-[node name="Corpo" type="StaticBody3D" parent="." unique_id=242844403]
+[node name="Corpo" type="StaticBody3D" parent="." unique_id=912756299]
 collision_mask = 0
 
-[node name="Forma" type="CollisionShape3D" parent="Corpo" unique_id=1337567584]
+[node name="Forma" type="CollisionShape3D" parent="Corpo" unique_id=1585749887]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
 shape = SubResource("BoxShape3D_5vbw2")

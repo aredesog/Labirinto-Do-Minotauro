@@ -32,6 +32,11 @@ func interagir(_quem: Node) -> void:
 		girou.emit())
 
 
+## Enquanto gira, o feixe "varre" a sala: o puzzle ignora o cristal nesse meio tempo.
+func esta_girando() -> bool:
+	return _girando
+
+
 ## Normal da face espelhada, no espaço do mundo.
 func normal() -> Vector3:
 	return global_basis.z.normalized()

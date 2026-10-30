@@ -1,121 +1,21 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/inimigos/minitaurinho_prototipo.gd" id="1_5k37b"]
+[ext_resource type="Script" path="res://scripts/inimigos/minitaurinho_prototipo.gd" id="1_imciw"]
+[ext_resource type="PackedScene" path="res://assets/modelos/personagens/minitaurinho.glb" id="2_iavkb"]
 
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_imciw"]
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_rdrjb"]
 radius = 0.32
 height = 1.1
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_iavkb"]
-albedo_color = Color(0.627451, 0.4392157, 0.2901961, 1)
-roughness = 0.4
-
-[sub_resource type="SphereMesh" id="SphereMesh_rdrjb"]
-material = SubResource("StandardMaterial3D_iavkb")
-radius = 0.3
-height = 0.55
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ib8gs"]
-albedo_color = Color(0.24705882, 0.43529412, 0.65882355, 1)
-roughness = 0.4
-
-[sub_resource type="CylinderMesh" id="CylinderMesh_o7bgs"]
-material = SubResource("StandardMaterial3D_ib8gs")
-top_radius = 0.28
-bottom_radius = 0.24
-height = 0.14
-
-[sub_resource type="SphereMesh" id="SphereMesh_g53wy"]
-material = SubResource("StandardMaterial3D_iavkb")
-radius = 0.32
-height = 0.6
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4d34x"]
-albedo_color = Color(0.8509804, 0.6901961, 0.54901963, 1)
-roughness = 0.4
-
-[sub_resource type="SphereMesh" id="SphereMesh_ypj24"]
-material = SubResource("StandardMaterial3D_4d34x")
-radius = 0.18
-height = 0.24
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ba2yt"]
-albedo_color = Color(0.9490196, 0.9098039, 0.8, 1)
-roughness = 0.4
-
-[sub_resource type="CylinderMesh" id="CylinderMesh_6oo0j"]
-material = SubResource("StandardMaterial3D_ba2yt")
-top_radius = 0.0
-bottom_radius = 0.06
-height = 0.3
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_qmc88"]
-albedo_color = Color(0.101960786, 0.101960786, 0.101960786, 1)
-roughness = 0.2
-
-[sub_resource type="SphereMesh" id="SphereMesh_6wgwm"]
-material = SubResource("StandardMaterial3D_qmc88")
-radius = 0.05
-height = 0.1
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_m7t3t"]
-albedo_color = Color(0.9490196, 0.9098039, 0.8, 1)
-roughness = 0.4
-
-[sub_resource type="CylinderMesh" id="CylinderMesh_rng3j"]
-material = SubResource("StandardMaterial3D_m7t3t")
-top_radius = 0.0
-bottom_radius = 0.06
-height = 0.3
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_o4v2f"]
-albedo_color = Color(0.101960786, 0.101960786, 0.101960786, 1)
-roughness = 0.2
-
-[sub_resource type="SphereMesh" id="SphereMesh_k1q77"]
-material = SubResource("StandardMaterial3D_o4v2f")
-radius = 0.05
-height = 0.1
-
-[node name="Minitaurinho" type="CharacterBody3D" unique_id=1852652264]
+[node name="Minitaurinho" type="CharacterBody3D" unique_id=97200404]
 collision_layer = 4
 collision_mask = 7
-script = ExtResource("1_5k37b")
+script = ExtResource("1_imciw")
 
-[node name="Forma" type="CollisionShape3D" parent="." unique_id=1216157674]
+[node name="Forma" type="CollisionShape3D" parent="." unique_id=1040913748]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
-shape = SubResource("CapsuleShape3D_imciw")
+shape = SubResource("CapsuleShape3D_rdrjb")
 
-[node name="Visual" type="Node3D" parent="." unique_id=1859843228]
+[node name="Visual" type="Node3D" parent="." unique_id=1093037245]
 
-[node name="Corpo" type="MeshInstance3D" parent="Visual" unique_id=1310285146]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
-mesh = SubResource("SphereMesh_rdrjb")
-
-[node name="Tanga" type="MeshInstance3D" parent="Visual" unique_id=1901760878]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
-mesh = SubResource("CylinderMesh_o7bgs")
-
-[node name="Cabeca" type="MeshInstance3D" parent="Visual" unique_id=231260536]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
-mesh = SubResource("SphereMesh_g53wy")
-
-[node name="Focinho" type="MeshInstance3D" parent="Visual" unique_id=1300779095]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.76, 0.24)
-mesh = SubResource("SphereMesh_ypj24")
-
-[node name="ChifreE" type="MeshInstance3D" parent="Visual" unique_id=1077905883]
-transform = Transform3D(0.64278764, -0.76604444, 0, 0.76604444, 0.64278764, 0, 0, 0, 1, -0.3, 1.08, 0)
-mesh = SubResource("CylinderMesh_6oo0j")
-
-[node name="OlhoE" type="MeshInstance3D" parent="Visual" unique_id=1701755375]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.12, 0.92, 0.27)
-mesh = SubResource("SphereMesh_6wgwm")
-
-[node name="ChifreD" type="MeshInstance3D" parent="Visual" unique_id=857818210]
-transform = Transform3D(0.64278764, 0.76604444, 0, -0.76604444, 0.64278764, 0, 0, 0, 1, 0.3, 1.08, 0)
-mesh = SubResource("CylinderMesh_rng3j")
-
-[node name="OlhoD" type="MeshInstance3D" parent="Visual" unique_id=188350419]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.12, 0.92, 0.27)
-mesh = SubResource("SphereMesh_k1q77")
+[node name="Corpo" type="Node3D" parent="Visual" unique_id=1489824486 instance=ExtResource("2_iavkb")]

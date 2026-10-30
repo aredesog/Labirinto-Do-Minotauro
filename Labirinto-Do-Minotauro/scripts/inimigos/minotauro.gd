@@ -373,8 +373,24 @@ func _entrar_fase2() -> void:
 	for lado in [-1.0, 1.0]:
 		var m := cena_minitaurinho.instantiate() as Node3D
 		get_parent().add_child(m)
-		m.global_position = global_position + global_basis.x * lado * 3.0 + Vector3.UP * 0.2
+		m.global_position = _ponto_dentro_da_arena(global_position + global_basis.x * lado * 3.0) + Vector3.UP * 0.2
 		_reforcos.append(m)
+		Efeitos.fumaca(m.global_position)
+
+
+## Prende o ponto dentro da arena (longe das paredes). Antes as crias podiam
+## nascer do lado de fora quando o Minotauro estava encostado numa parede.
+func _ponto_dentro_da_arena(p: Vector3) -> Vector3:
+	var arena := get_parent() as Node3D
+	var meio := Vector2(6.0, 6.0)
+	if arena and arena.get("meio_tamanho") != null:
+		meio = arena.get("meio_tamanho")
+	var centro := arena.global_position if arena else Vector3.ZERO
+	var margem := 1.3
+	var local := p - centro
+	local.x = clampf(local.x, -meio.x + margem, meio.x - margem)
+	local.z = clampf(local.z, -meio.y + margem, meio.y - margem)
+	return Vector3(centro.x + local.x, global_position.y, centro.z + local.z)
 
 
 func _morrer() -> void:

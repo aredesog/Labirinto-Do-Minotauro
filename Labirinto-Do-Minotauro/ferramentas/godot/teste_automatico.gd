@@ -251,6 +251,15 @@ func _rodar() -> void:
 		cliques.append(e.find_child(nome, true, false).cliques_ate_solucao())
 	print("  (cliques sorteados: %s)" % str(cliques))
 	checar(not (0 in cliques), "espelhos: nenhum começa na posição da solução")
+	# bug: girar só o 1º espelho fazia o feixe "varrer" a sala e acertar o cristal
+	var esp1 := e.find_child("Espelho1", true, false)
+	for k in 8:
+		esp1.interagir(teseu)
+		for q in 20:
+			await esperar(0.02)
+			if e.esta_concluida():
+				break
+	checar(not e.esta_concluida(), "espelhos: girar só o 1º espelho não resolve (nem durante o giro)")
 	for nome in ["Espelho1", "Espelho2", "Espelho3"]:
 		var esp := e.find_child(nome, true, false)
 		for k in esp.cliques_ate_solucao():
@@ -598,6 +607,16 @@ func _luta_chefe(arena: Node) -> void:
 	await esperar(0.3)
 	checar(chefe.fase2, "com metade da vida entra na fase 2")
 	checar(inimigos().size() == 2, "fase 2 chama 2 minitaurinhos")
+	var meio_a: Vector2 = arena.get("meio_tamanho") if arena.get("meio_tamanho") != null else Vector2(6, 6)
+	var dentro := true
+	for cria in inimigos():
+		var l: Vector3 = (cria as Node3D).global_position - (arena as Node3D).global_position
+		if absf(l.x) > meio_a.x - 0.5 or absf(l.z) > meio_a.y - 0.5:
+			dentro = false
+	checar(dentro, "as crias nascem dentro da arena")
+	var longe: Vector3 = chefe._ponto_dentro_da_arena((arena as Node3D).global_position + Vector3(40, 0, -40))
+	var ll: Vector3 = longe - (arena as Node3D).global_position
+	checar(absf(ll.x) < meio_a.x and absf(ll.z) < meio_a.y, "ponto de nascimento é preso dentro da arena")
 	await esperar(2.0)
 
 	# derrota

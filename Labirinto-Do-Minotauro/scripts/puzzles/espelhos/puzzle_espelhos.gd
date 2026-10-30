@@ -51,6 +51,11 @@ func resetar() -> void:
 func _ao_atingir(cristal: Node) -> void:
 	if not ativo:
 		return
+	# só vale com os espelhos parados num ângulo de 45°: durante o giro o feixe
+	# passa por ângulos intermediários e podia acertar o cristal "de raspão"
+	for e in filhos_no_grupo("espelho"):
+		if e.esta_girando():
+			return
 	cristal.receber_luz()
 	for e in filhos_no_grupo("espelho"):
 		e.habilitado = false

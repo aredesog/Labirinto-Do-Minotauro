@@ -186,6 +186,17 @@ func gerar_objetos() -> void:
 	p.set_script(load("res://scripts/salas/prisioneiro.gd"))
 	modelo(p, p, MOD + "personagens/prisioneiro.glb")
 	salvar(p, OBJ + "prisioneiro.tscn")
+	var pa := Node3D.new()
+	pa.name = "Prisioneira"
+	pa.set_script(load("res://scripts/salas/prisioneiro.gd"))
+	modelo(pa, pa, MOD + "personagens/prisioneira.glb")
+	salvar(pa, OBJ + "prisioneira.tscn")
+	# --- Ariadne (NPC da entrada) ---
+	var ar := Node3D.new()
+	ar.name = "Ariadne"
+	ar.set_script(load("res://scripts/salas/npc_boneco.gd"))
+	modelo(ar, ar, MOD + "personagens/ariadne.glb", Vector3.ZERO, 0, Vector3.ONE * 1.05)
+	salvar(ar, OBJ + "ariadne.tscn")
 
 	# --- Teseu provisório ---
 	var t := CharacterBody3D.new()
@@ -201,18 +212,11 @@ func gerar_objetos() -> void:
 	cap.position = Vector3(0, 0.6, 0)
 	add(t, cap, t, "Forma")
 	var vis := n3d(t, t, "Visual")
-	modelo(vis, t, MOD + "personagens/prisioneiro.glb", Vector3.ZERO, 0, Vector3.ONE * 1.15, "Corpo")
-	var faixa := TorusMesh.new()
-	faixa.inner_radius = 0.3
-	faixa.outer_radius = 0.36
-	malha(vis, t, "Faixa", faixa, mat(Color("#b8342c")), Vector3(0, 1.08, 0.02), Vector3(-12, 0, 0),
-		Vector3(1.0, 0.6, 1.0))
-	var capa := BoxMesh.new()
-	capa.size = Vector3(0.42, 0.5, 0.05)
-	malha(vis, t, "Capa", capa, mat(Color("#b8342c")), Vector3(0, 0.4, -0.2), Vector3(10, 0, 0))
+	# modelo da folha de modelo (cabelo cacheado, faixa, túnica, capa)
+	modelo(vis, t, MOD + "personagens/teseu.glb", Vector3.ZERO, 0, Vector3.ONE * 1.05, "Corpo")
 	# escudo hoplon no braço esquerdo (+X) e espada xiphos na mão direita (-X)
-	modelo(vis, t, MOD + "armas/escudo_hoplon.glb", Vector3(0.36, 0.45, 0.06), 65,
-		Vector3.ONE * 0.95, "Escudo")
+	modelo(vis, t, MOD + "armas/escudo_hoplon.glb", Vector3(0.27, 0.42, 0.04), 65,
+		Vector3.ONE * 0.9, "Escudo")
 	# o pivô fica no centro do corpo e a espada a 0,3 m dele (o "braço"):
 	# assim o golpe gira em volta do Teseu sem atravessar o corpo
 	var piv_espada := n3d(vis, t, "Espada", Vector3(0, 0.42, 0.0))
@@ -220,7 +224,7 @@ func gerar_objetos() -> void:
 		Vector3.ONE * 1.15, "Xiphos")
 	esp.rotation_degrees = Vector3(90, 0, 0)  # lâmina para a frente (+Z)
 	# novelo de Ariadne preso na cabeça (encolhe a cada volta gasta)
-	var nov := n3d(vis, t, "Novelo", Vector3(0, 1.38, -0.08))
+	var nov := n3d(vis, t, "Novelo", Vector3(0, 1.24, -0.06))
 	var bola := SphereMesh.new()
 	bola.radius = 0.15
 	bola.height = 0.3
@@ -283,6 +287,7 @@ func gerar_objetos() -> void:
 	c.name = "Cela"
 	c.set_script(load("res://scripts/salas/cela.gd"))
 	c.set("cena_prisioneiro", load(OBJ + "prisioneiro.tscn"))
+	c.set("cena_prisioneira", load(OBJ + "prisioneira.tscn"))
 	modelo(c, c, MOD + "puzzles/cela.glb")
 	var cc := corpo_estatico(c, c)
 	for lado in [-1.0, 1.0]:
@@ -421,49 +426,17 @@ func minitaurinho(nome: String, script: String, pelo: Color, cor_tanga: Color, a
 	cap2.position = Vector3(0, 0.55, 0)
 	add(m, cap2, m, "Forma")
 	var vm := n3d(m, m, "Visual")
-	var marrom := mat(pelo)
-	var corpo := SphereMesh.new()
-	corpo.radius = 0.3
-	corpo.height = 0.55
-	malha(vm, m, "Corpo", corpo, marrom, Vector3(0, 0.35, 0))
-	var tanga := CylinderMesh.new()
-	tanga.top_radius = 0.28
-	tanga.bottom_radius = 0.24
-	tanga.height = 0.14
-	malha(vm, m, "Tanga", tanga, mat(cor_tanga), Vector3(0, 0.2, 0))
-	var cabeca := SphereMesh.new()
-	cabeca.radius = 0.32
-	cabeca.height = 0.6
-	malha(vm, m, "Cabeca", cabeca, marrom, Vector3(0, 0.85, 0))
-	var focinho := SphereMesh.new()
-	focinho.radius = 0.18
-	focinho.height = 0.24
-	malha(vm, m, "Focinho", focinho, mat(Color("#d9b08c")), Vector3(0, 0.76, 0.24))
-	for lado in [-1.0, 1.0]:
-		var chifre := CylinderMesh.new()
-		chifre.top_radius = 0.0
-		chifre.bottom_radius = 0.06
-		chifre.height = 0.3
-		malha(vm, m, "Chifre" + ("E" if lado < 0 else "D"), chifre, mat(Color("#f2e8cc")),
-			Vector3(lado * 0.3, 1.08, 0.0), Vector3(0, 0, -lado * 50))
-		var olho := SphereMesh.new()
-		olho.radius = 0.05
-		olho.height = 0.1
-		malha(vm, m, "Olho" + ("E" if lado < 0 else "D"), olho, mat(Color("#1a1a1a"), 0.0, 0.2),
-			Vector3(lado * 0.12, 0.92, 0.27))
+	# modelo da folha de modelo (o comum leva a clava; o arremessador, não)
+	var glb := "minitaurinho_arremessador.glb" if arremessador else "minitaurinho.glb"
+	modelo(vm, m, MOD + "personagens/" + glb, Vector3.ZERO, 0, Vector3.ONE, "Corpo")
 	if arremessador:
-		# faixa na testa e a pedra na mão (sobe acima da cabeça antes do arremesso)
-		var faixa := TorusMesh.new()
-		faixa.inner_radius = 0.27
-		faixa.outer_radius = 0.33
-		malha(vm, m, "Faixa", faixa, mat(cor_tanga), Vector3(0, 0.98, 0.0), Vector3(-10, 0, 0),
-			Vector3(1.0, 0.5, 1.0))
+		# a pedra na mão direita (sobe acima da cabeça antes do arremesso)
 		var pedra := SphereMesh.new()
 		pedra.radius = 0.17
 		pedra.height = 0.3
 		pedra.radial_segments = 8
 		pedra.rings = 4
-		malha(vm, m, "Pedra", pedra, mat(Color("#8c8378"), 0.0, 0.9), Vector3(0.3, 0.55, 0.15))
+		malha(vm, m, "Pedra", pedra, mat(Color("#8c8378"), 0.0, 0.9), Vector3(-0.25, 0.32, 0.12))
 	return m
 
 
@@ -840,7 +813,7 @@ func fase_principal() -> Node3D:
 	# início: Ariadne entrega o novelo; 2 portais sorteados
 	var ini := area_simples(mapa, f, "inicio")
 	comodo(ini, 3, SALAS_MAPA["inicio"][3], 2, false, f)
-	var ariadne := inst(OBJ + "prisioneiro.tscn") as Node3D
+	var ariadne := inst(OBJ + "ariadne.tscn") as Node3D
 	ariadne.position = Vector3(-1.4, 0, -1.2)
 	ariadne.rotation.y = deg_to_rad(30)
 	add(ini, ariadne, f, "Ariadne")

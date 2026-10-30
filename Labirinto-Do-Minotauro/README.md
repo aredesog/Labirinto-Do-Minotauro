@@ -120,8 +120,13 @@ Corpo de cavalo, tronco e cabeça de touro, machado duplo. Padrões com aviso vi
 
 ### Arte (Blender, gerada por script Python)
 Kit modular do cenário (piso, paredes, pilares, arco, grades, tochas, portão),
-props (colunas gregas, ânforas, ossos), objetos dos enigmas, prisioneiros,
-**espada xiphos**, **escudo hoplon** e o **Minotauro articulado**.
+props (colunas gregas, ânforas, ossos), objetos dos enigmas, **espada xiphos**,
+**escudo hoplon** e o **Minotauro articulado**. Personagens no estilo das folhas
+de modelo do grupo: **Teseu** (cabelo cacheado, faixa vermelha, túnica e capa),
+**minitaurinho** (com clava) e **arremessador**, **Ariadne** (vestido lilás,
+diadema e o novelo na mão) e os atenienses presos (**rapazes e moças**).
+Todos têm pivôs (cabeça, braços, pernas, cauda) e são animados por código:
+andam, erguem o escudo, golpeiam com a clava e pedem ajuda nas celas.
 
 ![Modelos](docs/capturas/modelos.png)
 
@@ -133,7 +138,7 @@ props (colunas gregas, ânforas, ossos), objetos dos enigmas, prisioneiros,
 | Pós-processamento tilt-shift (efeito miniatura) | `scripts/visual/tilt_shift.gdshader` |
 | Sistemas de partículas (CPUParticles3D, billboards) | `scripts/visual/efeitos.gd` |
 | Síntese sonora (Karplus-Strong, filtros IIR, convolução para reverb) | `ferramentas/audio/gerar_sons.py` |
-| Animação procedural por pivôs (sem esqueleto) | `scripts/inimigos/minotauro.gd` |
+| Animação procedural por pivôs (sem esqueleto) | `scripts/inimigos/minotauro.gd`, `scripts/visual/anim_boneco.gd` |
 | Coração por curva paramétrica no HUD | `scripts/ui/hud_desenho.gd` |
 | Malha gerada em código (rastro da espada) | `scripts/jogador/teseu_prototipo.gd` |
 | MultiMesh para o piso (1 draw call por sala) | `ferramentas/godot/gerar_cenas.gd` |

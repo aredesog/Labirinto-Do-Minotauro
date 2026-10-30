@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/salas/npc_boneco.gd" id="1_erpsd"]
+[ext_resource type="PackedScene" path="res://assets/modelos/personagens/ariadne.glb" id="2_yoa7n"]
+
+[node name="Ariadne" type="Node3D" unique_id=550543699]
+script = ExtResource("1_erpsd")
+
+[node name="Modelo" type="Node3D" parent="." unique_id=1507770515 instance=ExtResource("2_yoa7n")]
+transform = Transform3D(1.05, 0, 0, 0, 1.05, 0, 0, 0, 1.05, 0, 0, 0)

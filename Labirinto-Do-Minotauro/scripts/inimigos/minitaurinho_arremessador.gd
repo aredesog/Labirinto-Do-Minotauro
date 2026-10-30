@@ -13,6 +13,7 @@ extends Minitaurinho
 var _mirando := 0.0
 var _lado := 1.0
 var _pedra_mao: Node3D
+var _pedra_pos := Vector3.ZERO
 
 
 func _ready() -> void:
@@ -20,6 +21,8 @@ func _ready() -> void:
 	_cooldown = randf_range(1.2, 2.0)
 	_lado = 1.0 if randf() < 0.5 else -1.0
 	_pedra_mao = get_node_or_null("Visual/Pedra")
+	if _pedra_mao:
+		_pedra_pos = _pedra_mao.position
 
 
 func _comportamento(dir: Vector3, distancia: float, delta: float) -> void:
@@ -50,6 +53,13 @@ func _comportamento(dir: Vector3, distancia: float, delta: float) -> void:
 		_comecar_mira()
 
 
+func _braco_ocupado() -> bool:
+	if _mirando > 0.0 and _anim:
+		_anim.posar_braco(_anim.braco_d, -2.8, get_physics_process_delta_time())
+		return true
+	return false
+
+
 func _linha_livre() -> bool:
 	var consulta := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * 0.8,
 		_alvo.global_position + Vector3.UP * 0.8, 1)
@@ -71,7 +81,7 @@ func _arremessar() -> void:
 		_visual.position = Vector3.ZERO
 	if _pedra_mao:
 		_pedra_mao.visible = false
-		_pedra_mao.position = Vector3(0.3, 0.55, 0.15)
+		_pedra_mao.position = _pedra_pos
 		_pedra_mao.scale = Vector3.ONE
 		get_tree().create_timer(0.8, false).timeout.connect(func():
 			if is_instance_valid(_pedra_mao):
@@ -94,6 +104,6 @@ func levar_dano(quantidade: int, direcao: Vector3 = Vector3.ZERO) -> void:
 	if _visual:
 		_visual.position = Vector3.ZERO
 	if _pedra_mao:
-		_pedra_mao.position = Vector3(0.3, 0.55, 0.15)
+		_pedra_mao.position = _pedra_pos
 		_pedra_mao.scale = Vector3.ONE
 	super.levar_dano(quantidade, direcao)

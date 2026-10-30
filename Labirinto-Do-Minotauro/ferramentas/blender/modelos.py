@@ -407,27 +407,254 @@ def cela():
     g.criar(bevel=0.008, pai=r)
 
 
-def prisioneiro():
-    """Jovem ateniense preso (NPC simples, sem rig). Material 'Tunica' recebe outra cor no Godot."""
-    r = raiz("Prisioneiro")
-    c = Peca("Corpo")  # <- Godot (troca a cor da túnica)
+# ==========================================================================
+# PERSONAGENS "DE BRINQUEDO" (seguem as folhas de modelo)
+# Todos têm pivôs (Empty) para a animação procedural no Godot:
+#   Cabeca, BracoE, BracoD, PernaE, PernaD (e Cauda no minitaurinho).
+# Esquerda do personagem = +X (ele olha para -Y no Blender = +Z no Godot).
+# ==========================================================================
+def _olhos(h, z, x=0.09, y=-0.235, tam=0.045, bravo=True, cilios=False):
+    """Olhos pretos grandes com brilho, sobrancelhas (bravas ou não)."""
+    preto = M("olho", cor="#1a1414", rugosidade=0.25)
+    brilho = M("brilho", cor="#ffffff", rugosidade=0.2)
+    sobr = M("sobrancelha", cor="#3a2418", rugosidade=0.6)
+    for s in (-1, 1):
+        h.esfera(preto, tam, (s * x, y, z), escala=(0.8, 0.45, 1.15), segs=12, aneis=8)
+        h.esfera(brilho, tam * 0.33, (s * (x - 0.012), y - 0.022, z + 0.022), segs=8, aneis=6)
+        if bravo:
+            h.tubo(sobr, [(s * (x + 0.06), y + 0.01, z + 0.085), (s * (x - 0.045), y - 0.01, z + 0.06)],
+                   0.014, lados=6)
+        else:
+            h.tubo(sobr, [(s * (x + 0.055), y + 0.015, z + 0.07), (s * x, y + 0.0, z + 0.09),
+                          (s * (x - 0.045), y + 0.005, z + 0.075)], 0.01, lados=6)
+        if cilios:
+            h.tubo(preto, [(s * (x + 0.035), y - 0.005, z + 0.035), (s * (x + 0.065), y - 0.0, z + 0.06)],
+                   0.008, lados=5)
+
+
+def _bochechas(h, z, x=0.15, y=-0.205):
+    rosa = M("bochecha", cor="#f29a8e", rugosidade=0.7)
+    for s in (-1, 1):
+        h.esfera(rosa, 0.035, (s * x, y, z), escala=(1.4, 0.35, 0.8), segs=10, aneis=6)
+
+
+def _cabeca_humana(h, pele, cabelo, menina=False, bravo=True):
+    """Cabeça grande de brinquedo: pele, orelhas, olhos, boca e cabelo."""
+    h.esfera(pele, 0.25, (0, 0, 0.22), escala=(1.05, 1.0, 0.95))
+    h.esfera(pele, 0.026, (0, -0.25, 0.15), segs=8, aneis=6)  # nariz
+    for s in (-1, 1):
+        h.esfera(pele, 0.05, (s * 0.255, 0.0, 0.2), escala=(0.55, 0.8, 1.0), segs=10, aneis=8)
+    _olhos(h, 0.2, bravo=bravo, cilios=menina)
+    _bochechas(h, 0.13)
+    boca = M("boca", cor="#8a3a32", rugosidade=0.6)
+    if bravo:
+        h.tubo(boca, [(-0.03, -0.243, 0.095), (0, -0.248, 0.105), (0.03, -0.243, 0.095)], 0.008, lados=5)
+    else:
+        h.tubo(boca, [(-0.035, -0.243, 0.11), (0, -0.25, 0.092), (0.035, -0.243, 0.11)], 0.008, lados=5)
+    # cabelo: calota atrás/em cima + franja de cachos na testa
+    h.esfera(cabelo, 0.27, (0, 0.06, 0.3), escala=(1.05, 1.0, 0.8))
+    for k in range(7):
+        x = -0.18 + k * 0.06
+        h.esfera(cabelo, 0.065, (x, -0.17 + abs(x) * 0.35, 0.39 - abs(x) * 0.25), segs=12, aneis=8)
+    if menina:
+        # cabelo comprido descendo pelas costas + coque
+        h.esfera(cabelo, 0.25, (0, 0.13, 0.05), escala=(1.0, 0.65, 1.25))
+        for s in (-1, 1):
+            h.esfera(cabelo, 0.09, (s * 0.22, -0.02, 0.05), escala=(0.7, 0.8, 1.6), segs=12, aneis=8)
+        h.esfera(cabelo, 0.1, (0, 0.2, 0.42), segs=12, aneis=8)
+    else:
+        for k in range(8):
+            a = math.pi * (0.1 + 0.8 * k / 7)
+            h.esfera(cabelo, 0.075, (math.cos(a) * 0.24, 0.08 + math.sin(a) * 0.14, 0.2),
+                     segs=10, aneis=8)
+
+
+def _bracos(r, pele, ombro_z, ombro_x, comprimento=0.2, punho=None, manga=None):
+    for nome, s in (("BracoE", 1), ("BracoD", -1)):
+        piv = vazio(nome, (s * ombro_x, 0, ombro_z), pai=r)
+        b = Peca(nome + "Malha")
+        b.esfera(manga or pele, 0.05, (0, 0, 0), segs=10, aneis=8)
+        b.tubo(pele, [(0, 0, 0), (s * 0.03, 0, -comprimento)], 0.04, raio_final=0.038, lados=10)
+        b.esfera(punho or pele, 0.052, (s * 0.035, -0.01, -comprimento - 0.03), segs=12, aneis=8)
+        b.criar(bevel=0, pai=piv)
+
+
+def _pernas(r, pele, quadril_z, calcado, tiras=None, x=0.075):
+    for nome, s in (("PernaE", 1), ("PernaD", -1)):
+        piv = vazio(nome, (s * x, 0, quadril_z), pai=r)
+        p = Peca(nome + "Malha")
+        p.cilindro(pele, 0.045, quadril_z - 0.03, (0, 0, -(quadril_z - 0.03)), lados=10)
+        p.esfera(calcado, 0.06, (0, -0.025, -quadril_z + 0.035), escala=(1.0, 1.5, 0.6), segs=12, aneis=8)
+        if tiras is not None:
+            for z in (-quadril_z + 0.1, -quadril_z + 0.15):
+                p.toro(tiras, 0.047, 0.01, (0, 0, z), lados=14, lados_tubo=6)
+        p.criar(bevel=0, pai=piv)
+
+
+def teseu():
+    """Teseu (folha de modelo): cabelo cacheado com faixa vermelha, túnica branca
+    com barra azul, cinto de couro com fivela dourada, capa vermelha e sandálias."""
+    r = raiz("Teseu")
+    pele = M("pele")
+    tunica = M("tunica_teseu", cor="#f4ecd8", rugosidade=0.7)
+    azul = M("barra_azul", cor="#3f6fa8", rugosidade=0.6)
+    vermelho = M("capa", cor="#b8342c", rugosidade=0.65)
+    couro = M("couro")
+    _pernas(r, pele, 0.26, couro, tiras=couro)
+    c = Peca("Corpo")
+    c.torno(tunica, [(0.0, 0.2), (0.19, 0.2), (0.2, 0.24), (0.17, 0.34), (0.15, 0.45),
+                     (0.155, 0.56), (0.12, 0.62), (0.0, 0.63)], lados=24)
+    c.torno(azul, [(0.199, 0.195), (0.207, 0.215), (0.2, 0.245)], lados=24, fechar_base=False, fechar_topo=False)
+    c.toro(couro, 0.158, 0.022, (0, 0, 0.42), lados=24)
+    c.caixa(M("ouro", metal=0.6), (0.06, 0.03, 0.045), (0, -0.17, 0.42))
+    c.cilindro(pele, 0.06, 0.08, (0, 0, 0.6), lados=12)
+    # capa: painel nas costas + gola sobre os ombros
+    contorno = [(-0.16, 0.62), (0.16, 0.62), (0.22, 0.2), (-0.22, 0.2)]
+    c.prisma(vermelho, contorno, 0.025, pos=(0, 0.19, 0.0), rot=(90, 0, 0))
+    c.esfera(vermelho, 0.15, (0, 0.03, 0.6), escala=(1.25, 1.1, 0.32), segs=16, aneis=8)
+    c.criar(bevel=0, pai=r)
+    _bracos(r, pele, 0.56, 0.17)
+    cab = vazio("Cabeca", (0, 0, 0.64), pai=r)
+    h = Peca("CabecaMalha")
+    _cabeca_humana(h, pele, M("cabelo"), bravo=True)
+    # faixa vermelha na testa com o nó atrás
+    h.toro(vermelho, 0.252, 0.022, (0, 0.03, 0.37), rot=(-10, 0, 0), lados=28, lados_tubo=8)
+    for s in (-1, 1):
+        h.tubo(vermelho, [(0, 0.29, 0.37), (s * 0.04, 0.32, 0.27), (s * 0.06, 0.31, 0.2)], 0.016,
+               lados=6, raio_final=0.01)
+    h.criar(bevel=0, pai=cab)
+
+
+def minitaurinho(arremessador=False):
+    """Minitaurinho (folha de modelo): cabeção marrom com chifres, focinho claro,
+    sobrancelha brava, barriga clara, cinto escuro com fivela, tanga, cascos e rabo.
+    O comum leva a clava; o arremessador (tanga vermelha) fica de mãos livres."""
+    r = raiz("Minitaurinho")
+    pelo = M("pelo_mini", cor="#6e4a33" if arremessador else "#8a5a3c", rugosidade=0.6)
+    claro = M("pelo_claro_mini", cor="#c99a74", rugosidade=0.6)
+    focinho = M("focinho", cor="#f0c3a3", rugosidade=0.6)
+    escuro = M("casco_mini", cor="#3a261a", rugosidade=0.5)
+    chifre = M("chifre", cor="#f2e8cc", rugosidade=0.4)
+    tanga = M("tanga", cor="#b8342c" if arremessador else "#3f6fa8", rugosidade=0.6)
+    # pernas curtas com cascos
+    for nome, s in (("PernaE", 1), ("PernaD", -1)):
+        piv = vazio(nome, (s * 0.085, 0, 0.24), pai=r)
+        p = Peca(nome + "Malha")
+        p.cilindro(pelo, 0.055, 0.2, (0, 0, -0.2), lados=10)
+        p.cilindro(escuro, 0.066, 0.07, (0, -0.01, -0.24), raio_topo=0.06, lados=12)
+        p.criar(bevel=0.005, pai=piv)
+    c = Peca("Corpo")
+    c.torno(pelo, [(0.0, 0.18), (0.17, 0.18), (0.2, 0.3), (0.19, 0.45), (0.15, 0.56), (0.0, 0.6)], lados=24)
+    c.esfera(claro, 0.14, (0, -0.135, 0.4), escala=(1.0, 0.45, 1.05), segs=16, aneis=10)
+    c.torno(tanga, [(0.2, 0.15), (0.215, 0.2), (0.205, 0.3)], lados=24, fechar_base=False, fechar_topo=False)
+    c.toro(escuro, 0.2, 0.025, (0, 0, 0.3), lados=24)
+    c.caixa(M("ouro", metal=0.6), (0.06, 0.03, 0.05), (0, -0.215, 0.3))
+    c.criar(bevel=0, pai=r)
+    cauda = vazio("Cauda", (0, 0.18, 0.28), pai=r)
+    t = Peca("CaudaMalha")
+    t.tubo(pelo, [(0, 0, 0), (0, 0.08, -0.04), (0, 0.13, -0.13)], 0.02, lados=6)
+    t.esfera(escuro, 0.04, (0, 0.14, -0.17), escala=(1, 1, 1.5), segs=8, aneis=6)
+    t.criar(bevel=0, pai=cauda)
+    for nome, s in (("BracoE", 1), ("BracoD", -1)):
+        piv = vazio(nome, (s * 0.2, 0, 0.5), pai=r)
+        b = Peca(nome + "Malha")
+        b.esfera(pelo, 0.065, (0, 0, 0), segs=10, aneis=8)
+        b.tubo(pelo, [(0, 0, 0), (s * 0.04, -0.01, -0.19)], 0.055, raio_final=0.05, lados=10)
+        b.esfera(escuro, 0.065, (s * 0.045, -0.02, -0.23), segs=12, aneis=8)
+        b.criar(bevel=0, pai=piv)
+        if nome == "BracoD" and not arremessador:
+            clava = vazio("Clava", (s * 0.045, -0.04, -0.23), pai=piv)
+            k = Peca("ClavaMalha")
+            madeira = M("madeira")
+            # clava de pé na mão, um pouco inclinada para a frente
+            ang = math.radians(15)
+            k.cilindro(madeira, 0.035, 0.52, (0, 0, -0.08), rot=(15, 0, 0), raio_topo=0.075, lados=10)
+            k.esfera(madeira, 0.075, (0, -math.sin(ang) * 0.44, math.cos(ang) * 0.44 - 0.08), segs=10, aneis=8)
+            for d in (0.2, 0.34):
+                k.toro(M("couro_escuro", cor="#5a3a1e"), 0.058, 0.012,
+                       (0, -math.sin(ang) * d, math.cos(ang) * d - 0.08), rot=(15, 0, 0),
+                       lados=12, lados_tubo=6)
+            k.criar(bevel=0.004, pai=clava)
+    cab = vazio("Cabeca", (0, 0, 0.56), pai=r)
+    h = Peca("CabecaMalha")
+    h.esfera(pelo, 0.27, (0, 0, 0.25), escala=(1.12, 1.0, 1.0))
+    h.esfera(focinho, 0.15, (0, -0.22, 0.15), escala=(1.25, 0.72, 0.85), segs=18, aneis=12)
+    for s in (-1, 1):
+        h.esfera(escuro, 0.032, (s * 0.065, -0.325, 0.16), escala=(1, 0.5, 1.3), segs=8, aneis=6)
+        h.esfera(pelo, 0.09, (s * 0.32, 0.0, 0.3), escala=(1.7, 0.55, 0.8), segs=12, aneis=8)
+        h.esfera(focinho, 0.05, (s * 0.35, -0.03, 0.3), escala=(1.4, 0.3, 0.6), segs=8, aneis=6)
+        h.tubo(chifre, [(s * 0.2, 0.0, 0.44), (s * 0.3, -0.01, 0.5), (s * 0.36, -0.02, 0.6),
+                        (s * 0.35, -0.03, 0.68)], 0.05, raio_final=0.012, lados=10)
+    _olhos(h, 0.3, x=0.1, y=-0.255, tam=0.05, bravo=True)
+    h.criar(bevel=0, pai=cab)
+
+
+def prisioneiro(menina=False):
+    """Jovem ateniense (7 rapazes e 7 moças). A túnica usa o material 'tunica',
+    que o Godot pinta com uma cor diferente para cada prisioneiro."""
+    r = raiz("Prisioneira" if menina else "Prisioneiro")
     pele = M("pele")
     tunica = M("tunica")
-    c.torno(tunica, [(0.0, 0.12), (0.2, 0.12), (0.17, 0.3), (0.14, 0.5), (0.0, 0.52)], lados=20)
-    for s in (-1, 1):
-        c.cilindro(pele, 0.055, 0.14, (s * 0.08, 0, 0.0), lados=10)
-        c.esfera(M("couro"), 0.065, (s * 0.08, -0.03, 0.03), escala=(1, 1.4, 0.6), segs=10, aneis=6)
-        c.tubo(pele, [(s * 0.15, 0, 0.46), (s * 0.24, -0.02, 0.36), (s * 0.24, -0.06, 0.26)],
-               0.045, lados=8)
-    c.esfera(pele, 0.29, (0, 0, 0.8), escala=(1, 0.95, 0.92))
-    c.esfera(M("cabelo"), 0.3, (0, 0.04, 0.86), escala=(1.02, 0.95, 0.85))
-    for s in (-1, 1):
-        c.esfera(M("preto_vaso"), 0.035, (s * 0.1, -0.27, 0.8), escala=(0.8, 0.5, 1.2),
-                 segs=10, aneis=6)
-        c.esfera(M("faixa", cor="#e88a7a"), 0.03, (s * 0.17, -0.24, 0.72),
-                 escala=(1.4, 0.4, 0.8), segs=8, aneis=6)
-    c.criar(bevel=0, pai=r)
+    couro = M("couro")
+    if menina:
+        c = Peca("Corpo")  # <- Godot troca a cor da túnica
+        c.torno(tunica, [(0.0, 0.03), (0.2, 0.03), (0.19, 0.12), (0.16, 0.34), (0.145, 0.5),
+                         (0.15, 0.56), (0.11, 0.62), (0.0, 0.63)], lados=24)
+        c.toro(M("ouro", metal=0.5), 0.15, 0.015, (0, 0, 0.44), lados=24)
+        c.cilindro(pele, 0.055, 0.08, (0, 0, 0.6), lados=12)
+        for s in (-1, 1):
+            c.esfera(couro, 0.05, (s * 0.07, -0.08, 0.025), escala=(1, 1.4, 0.5), segs=10, aneis=6)
+        c.criar(bevel=0, pai=r)
+    else:
+        _pernas(r, pele, 0.24, couro)
+        c = Peca("Corpo")
+        c.torno(tunica, [(0.0, 0.19), (0.18, 0.19), (0.17, 0.32), (0.15, 0.45), (0.15, 0.56),
+                         (0.11, 0.62), (0.0, 0.63)], lados=24)
+        c.toro(couro, 0.153, 0.018, (0, 0, 0.4), lados=24)
+        c.cilindro(pele, 0.055, 0.08, (0, 0, 0.6), lados=12)
+        c.criar(bevel=0, pai=r)
+    _bracos(r, pele, 0.56, 0.16, comprimento=0.18)
+    cab = vazio("Cabeca", (0, 0, 0.64), pai=r)
+    h = Peca("CabecaMalha")
+    _cabeca_humana(h, pele, M("cabelo_preso", cor="#3a2418" if menina else "#5a3a24"),
+                   menina=menina, bravo=False)
+    h.criar(bevel=0, pai=cab)
 
+
+def ariadne():
+    """Ariadne, princesa de Creta: vestido lilás longo com barra e cinto dourados,
+    cabelo comprido com diadema e o novelo vermelho na mão (nó 'NoveloMao')."""
+    r = raiz("Ariadne")
+    pele = M("pele")
+    vestido = M("vestido", cor="#c9a8e0", rugosidade=0.6)
+    vestido_escuro = M("vestido_escuro", cor="#9b78b8", rugosidade=0.6)
+    ouro = M("ouro", metal=0.6)
+    c = Peca("Corpo")
+    c.torno(vestido, [(0.0, 0.02), (0.25, 0.02), (0.235, 0.12), (0.18, 0.36), (0.15, 0.52),
+                      (0.155, 0.6), (0.12, 0.66), (0.0, 0.67)], lados=28)
+    c.torno(ouro, [(0.25, 0.015), (0.256, 0.04), (0.248, 0.065)], lados=28, fechar_base=False, fechar_topo=False)
+    c.torno(vestido_escuro, [(0.0, 0.5), (0.2, 0.5), (0.19, 0.6), (0.0, 0.62)], pos=(0, 0, 0.03), lados=24)
+    c.toro(ouro, 0.155, 0.017, (0, 0, 0.47), lados=24)
+    c.cilindro(pele, 0.055, 0.08, (0, 0, 0.64), lados=12)
+    c.criar(bevel=0, pai=r)
+    _bracos(r, pele, 0.6, 0.165, comprimento=0.19, manga=vestido_escuro)
+    # novelo na mão direita (some quando ela o entrega na cena de abertura)
+    braco = [o for o in r.children if o.name == "BracoD"][0]
+    nov = vazio("NoveloMao", (-0.04, -0.07, -0.25), pai=braco)
+    n = Peca("NoveloMalha")
+    vermelho = M("novelo", cor="#c0302a", rugosidade=0.8)
+    n.esfera(vermelho, 0.075, (0, 0, 0), segs=16, aneis=10)
+    for k in range(3):
+        n.toro(M("fio", cor="#8e1f1a", rugosidade=0.8), 0.072, 0.008, (0, 0, 0), rot=(60 * k, 30 * k, 90),
+               lados=20, lados_tubo=5)
+    n.criar(bevel=0, pai=nov)
+    cab = vazio("Cabeca", (0, 0, 0.68), pai=r)
+    h = Peca("CabecaMalha")
+    _cabeca_humana(h, pele, M("cabelo_ariadne", cor="#2e1a12"), menina=True, bravo=False)
+    h.toro(ouro, 0.24, 0.016, (0, 0.03, 0.4), rot=(-14, 0, 0), lados=28, lados_tubo=6)
+    h.esfera(M("joia", cor="#7fd6ff", rugosidade=0.15, metal=0.3), 0.03, (0, -0.22, 0.43),
+             escala=(1, 0.6, 1.3), segs=10, aneis=6)
+    h.criar(bevel=0, pai=cab)
 
 
 # ==========================================================================
@@ -571,7 +798,11 @@ TODOS = {
                 ("simbolo_onda", lambda: placa_simbolo("onda")),
                 ("simbolo_raio", lambda: placa_simbolo("raio")),
                 ("cela", cela)],
-    "personagens": [("prisioneiro", prisioneiro), ("minotauro", minotauro)],
+    "personagens": [("prisioneiro", prisioneiro), ("prisioneira", lambda: prisioneiro(menina=True)),
+                    ("teseu", teseu), ("ariadne", ariadne),
+                    ("minitaurinho", minitaurinho),
+                    ("minitaurinho_arremessador", lambda: minitaurinho(arremessador=True)),
+                    ("minotauro", minotauro)],
     "armas": [("espada_xiphos", espada_xiphos), ("escudo_hoplon", escudo_hoplon)],
 }
 

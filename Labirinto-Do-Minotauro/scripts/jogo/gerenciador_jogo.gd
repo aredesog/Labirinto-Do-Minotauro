@@ -190,6 +190,10 @@ func _novelo_voando(ariadne: Node3D, alvo: Node3D, escala_final: Vector3) -> voi
 	bola.material_override = m
 	get_parent().add_child(bola)
 	var ini := ariadne.global_position + Vector3.UP * 1.0
+	var na_mao := ariadne.find_child("NoveloMao", true, false) as Node3D
+	if na_mao:
+		ini = na_mao.global_position
+		na_mao.visible = false
 	bola.global_position = ini
 	var tw := create_tween()
 	tw.tween_method(func(k: float):
@@ -198,6 +202,8 @@ func _novelo_voando(ariadne: Node3D, alvo: Node3D, escala_final: Vector3) -> voi
 		bola.rotation.x = k * 12.0, 0.0, 1.0, 0.9).set_trans(Tween.TRANS_SINE)
 	await tw.finished
 	bola.queue_free()
+	if na_mao and is_instance_valid(na_mao):
+		na_mao.visible = true
 	Efeitos.faisca(alvo.global_position, Color(1.0, 0.5, 0.4))
 	var tw2 := create_tween()
 	tw2.tween_property(alvo, "scale", escala_final * 1.4, 0.12)
