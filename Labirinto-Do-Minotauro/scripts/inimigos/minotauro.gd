@@ -68,6 +68,15 @@ var _t_casco := 0.0
 var _t_preso := 0.0
 var _desvio := Vector3.ZERO
 var _t_desvio := 0.0
+## Modelo do grupo com esqueleto: uma animação por estado da IA.
+var _modelo: AnimModelo
+var _estado_anim := -1
+const ANIM_DO_ESTADO := {
+	Estado.PARADO: "parado", Estado.INTRO: "rugir", Estado.PERSEGUIR: "andar",
+	Estado.MIRAR: "mirar", Estado.INVESTIDA: "correr", Estado.ATORDOADO: "atordoado",
+	Estado.ERGUER: "erguer", Estado.GOLPE: "golpe", Estado.RECUPERAR: "parado",
+	Estado.MORTO: "morrer", Estado.FREAR: "frear",
+}
 
 
 func _ready() -> void:
@@ -85,6 +94,7 @@ func _ready() -> void:
 	_braco_esq = find_child("BracoEsq", true, false)
 	_cauda = find_child("Cauda", true, false)
 	_mira = get_node_or_null("Mira")
+	_modelo = AnimModelo.new(_visual)
 	if _mira:
 		_mira.visible = false
 	_criar_estrelas()
@@ -129,6 +139,7 @@ func _voltar_ao_inicio() -> void:
 	if _visual:
 		_visual.rotation = Vector3.ZERO
 		_visual.position = Vector3.ZERO
+	_estado_anim = -1
 	_mudar(Estado.PARADO)
 	vida_mudou.emit(vida, vida_maxima)
 
@@ -400,7 +411,7 @@ func _morrer() -> void:
 	for r in _reforcos:
 		if is_instance_valid(r) and r.has_method("levar_dano"):
 			r.levar_dano(99)
-	if _visual:
+	if _visual and not (_modelo and _modelo.tem()):
 		var tw := create_tween()
 		tw.tween_property(_visual, "rotation:z", deg_to_rad(80), 1.2).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 		tw.parallel().tween_property(_visual, "position:y", -0.4, 1.2)
@@ -481,6 +492,9 @@ func _criar_estrelas() -> void:
 # Animação procedural
 # --------------------------------------------------------------------------
 func _animar(delta: float) -> void:
+	if _modelo and _modelo.tem():
+		_animar_modelo(delta)
+		return
 	var correndo := estado == Estado.INVESTIDA
 	var andando := estado == Estado.PERSEGUIR
 	var freq := 16.0 if correndo else (7.0 if andando else 2.0)
@@ -546,6 +560,36 @@ func _animar(delta: float) -> void:
 		_cauda.rotation.y = sin(_anim * 0.7) * 0.4
 	if _visual and estado != Estado.MORTO:
 		_visual.position.y = absf(sin(_anim)) * (0.08 if andando or correndo else 0.0)
+
+
+## Animações do Blender: troca quando o estado muda. O tempo de "erguer"
+## acompanha o tempo do estado ERGUER (mais rápido na fase 2).
+func _animar_modelo(delta: float) -> void:
+	if estado != _estado_anim:
+		_estado_anim = estado
+		var nome: String = ANIM_DO_ESTADO.get(estado, "parado")
+		var vel := _fator_fase()
+		var mistura := 0.15
+		match estado:
+			Estado.ERGUER:
+				var dur := _modelo.ap.get_animation("erguer").length if _modelo.ap.has_animation("erguer") else 0.6
+				vel = dur / (0.65 / _fator_fase())
+				mistura = 0.08
+			Estado.GOLPE:
+				vel = 2.2
+				mistura = 0.02
+			Estado.INVESTIDA:
+				vel = 1.2 * _fator_fase()
+				mistura = 0.1
+			Estado.MORTO:
+				vel = 0.9
+		_modelo.trocar(nome, vel, mistura)
+	if estado == Estado.MIRAR and _mira:
+		var m := _mira.mesh as QuadMesh
+		m.size = Vector2(1.6, 4.0 + _t * 10.0)
+		_mira.position = Vector3(0, 0.06, 1.5 + m.size.y / 2.0)
+	if estado == Estado.ATORDOADO and _estrelas:
+		_estrelas.rotation.y += delta * 4.0
 
 
 func _rot(no: Node3D, alvo: float, delta: float, vel := 14.0) -> void:

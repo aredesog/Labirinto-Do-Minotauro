@@ -54,6 +54,8 @@ const ESPADA_DESCANSO := Vector3(0.45, -1.05, 0.0)
 @onready var _novelo: Node3D = get_node_or_null("Visual/Novelo")
 @onready var _escudo: Node3D = get_node_or_null("Visual/Escudo")
 var _anim: AnimBoneco
+## Cenas de cinema: direção em que o Teseu anda sozinho (controle desligado).
+var direcao_cinematica := Vector3.ZERO
 var _golpe := 0.0
 
 
@@ -86,6 +88,8 @@ func _physics_process(delta: float) -> void:
 	var entrada := Vector2.ZERO
 	if _controle_ativo:
 		entrada = Input.get_vector("mover_esquerda", "mover_direita", "mover_cima", "mover_baixo")
+	elif direcao_cinematica != Vector3.ZERO:
+		entrada = Vector2(direcao_cinematica.x, direcao_cinematica.z)
 	_definir_defesa(_controle_ativo and Input.is_action_pressed("defender"))
 	# A câmera olha para -Z, então "cima" na tela é -Z no mundo.
 	var direcao := Vector3(entrada.x, 0.0, entrada.y)

@@ -70,13 +70,17 @@ func _comecar_mira() -> void:
 	_mirando = tempo_mira
 	_cooldown = intervalo_arremesso
 	Som.tocar("grunhido", 2.0, 0.05, 1.25)
+	if _modelo:
+		_modelo.segurar("erguer")
 	if _pedra_mao:
 		var tw := create_tween()
-		tw.tween_property(_pedra_mao, "position", Vector3(0, 1.45, 0), 0.2).set_trans(Tween.TRANS_BACK)
+		tw.tween_property(_pedra_mao, "position", Vector3(0, 1.25, 0.05), 0.2).set_trans(Tween.TRANS_BACK)
 		tw.parallel().tween_property(_pedra_mao, "scale", Vector3.ONE * 1.3, 0.2)
 
 
 func _arremessar() -> void:
+	if _modelo:
+		_modelo.tocar("arremessar", 1.4)
 	if _visual:
 		_visual.position = Vector3.ZERO
 	if _pedra_mao:
@@ -101,6 +105,8 @@ func _arremessar() -> void:
 
 func levar_dano(quantidade: int, direcao: Vector3 = Vector3.ZERO) -> void:
 	_mirando = 0.0  # apanhar interrompe o arremesso
+	if _modelo:
+		_modelo.liberar()
 	if _visual:
 		_visual.position = Vector3.ZERO
 	if _pedra_mao:

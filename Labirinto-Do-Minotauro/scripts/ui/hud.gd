@@ -235,7 +235,7 @@ func _ao_terminar(venceu: bool) -> void:
 				j.prisioneiros_libertados, j.total_prisioneiros, j.puzzles_concluidos.size(), j.puzzles_para_abrir_arena]
 		_abrir_tela(_game_over, $GameOver/Caixa/Coluna/TentarDeNovo)
 		return
-	await get_tree().create_timer(2.5).timeout
+	await get_tree().create_timer(0.8).timeout
 	if j:
 		$Vitoria/Caixa/Coluna/Detalhe.text = "Atenienses libertados: %d / %d\nVoltas do novelo restantes: %d" % [
 			j.prisioneiros_libertados, j.total_prisioneiros, j.novelo]
@@ -247,3 +247,41 @@ func _abrir_tela(tela: Control, foco: Button) -> void:
 	tela.visible = true
 	create_tween().tween_property(tela, "modulate:a", 1.0, 0.8)
 	foco.grab_focus()
+
+
+## Créditos subindo na tela (final do jogo). Espaço/E acelera, Esc pula.
+func rolar_creditos() -> void:
+	var fundo := ColorRect.new()
+	fundo.name = "Creditos"
+	fundo.color = Color(0.03, 0.02, 0.06, 0.0)
+	fundo.set_anchors_preset(Control.PRESET_FULL_RECT)
+	fundo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(fundo)
+	var texto := Label.new()
+	texto.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	texto.add_theme_font_size_override("font_size", 26)
+	texto.add_theme_color_override("font_color", Color("#f4e6c8"))
+	texto.add_theme_color_override("font_outline_color", Color.BLACK)
+	texto.add_theme_constant_override("outline_size", 6)
+	var creditos: String = load("res://scripts/ui/titulo.gd").CREDITOS
+	texto.text = "FIM\n\nTeseu voltou com os 13 atenienses.\nAtenas está livre do tributo!\n\n\n" \
+		+ creditos.replace("[", "").replace("]", "") \
+		+ "\n\n\nTécnicas de Computação Gráfica: aperte F1 durante o jogo\n\n\nObrigado por jogar!"
+	fundo.add_child(texto)
+	var tela := get_viewport().get_visible_rect().size
+	texto.size = Vector2(tela.x, 0)
+	texto.position = Vector2(0, tela.y)
+	create_tween().tween_property(fundo, "color:a", 0.88, 0.8)
+	await get_tree().process_frame
+	var altura := texto.get_combined_minimum_size().y
+	var y := tela.y
+	while y > -altura:
+		await get_tree().process_frame
+		if _jogo and _jogo._pular:
+			break
+		var vel := 70.0 * (5.0 if Input.is_action_pressed("atacar") or Input.is_action_pressed("interagir") else 1.0)
+		y -= vel * get_process_delta_time()
+		texto.position.y = y
+	var tw := create_tween()
+	tw.tween_property(fundo, "modulate:a", 0.0, 0.6)
+	tw.tween_callback(fundo.queue_free)

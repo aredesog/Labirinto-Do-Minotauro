@@ -44,6 +44,12 @@ func _process(delta: float) -> void:
 		_anim.atualizar(delta, 0.6)
 
 
+## Final do jogo: livre, comemorando (sem sumir).
+func comemorar() -> void:
+	_livre = true
+	rotation.z = 0
+
+
 func libertar(atraso: float) -> void:
 	_livre = true
 	rotation.z = 0

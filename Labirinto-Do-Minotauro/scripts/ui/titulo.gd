@@ -8,9 +8,16 @@ const CENA_JOGO := "res://cenas/fase_principal.tscn"
 const CREDITOS := """[Labirinto do Minotauro]
 Trabalho de Computação Gráfica · Ciência da Computação · UNIFAL-MG
 
-Grupo: Guilherme Aredes e equipe
+Grupo "Herdeiros de Luca":
+Guilherme Aredes
+Melissa Alves
+Mel Dias
+Diego Vinna
+Francisco Toro
+Pedro Ferreira
 
-Modelos 3D: Blender (gerados por script Python)
+Personagens (Minotauro, minitaurinho, Ariadne): modelados pelo grupo
+Rig e animações: Blender · cenário e objetos gerados por script Python
 Motor: Godot 4.7 (renderizador Compatibilidade)
 Sons e músicas: sintetizados por código (numpy/scipy)
 Inspiração visual: The Legend of Zelda: Link's Awakening
@@ -22,6 +29,7 @@ Shift / L (segurar) — escudo: bloqueia golpes e pedras que vêm da frente
 E / K — usar (alavanca, braseiro, espelho)
 Andar contra a estátua — empurrar
 R — reiniciar a sala · Esc — pausa
+F1 — Raio-X de CG (colisões, normais, reflexões) · F2 tilt-shift · F3 toon/PBR
 
 Cada porta é um portal para uma sala sorteada.
 Vença os minitaurinhos, resolva os 3 enigmas e liberte os 13 atenienses.
@@ -48,6 +56,7 @@ func _ready() -> void:
 	Config.registrar_controles()
 	Config.carregar()
 	Config.aplicar_qualidade(self)
+	Toon.instalar(get_tree())
 	Som.musica("titulo", 1.0)
 	# braseiros acesos e o Teseu parado, olhando para o Minotauro
 	for b in find_children("*", "", true, false):

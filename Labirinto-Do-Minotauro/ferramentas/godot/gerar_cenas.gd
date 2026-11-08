@@ -195,7 +195,7 @@ func gerar_objetos() -> void:
 	var ar := Node3D.new()
 	ar.name = "Ariadne"
 	ar.set_script(load("res://scripts/salas/npc_boneco.gd"))
-	modelo(ar, ar, MOD + "personagens/ariadne.glb", Vector3.ZERO, 0, Vector3.ONE * 1.05)
+	modelo(ar, ar, MOD + "personagens/ariadne_grupo.glb", Vector3.ZERO, 0, Vector3.ONE * 1.15)
 	salvar(ar, OBJ + "ariadne.tscn")
 
 	# --- Teseu provisório ---
@@ -257,7 +257,8 @@ func gerar_objetos() -> void:
 	# entre a pilastra e a parede ao virar
 	cilindro(mi, mi, 0.95, 3.0, Vector3(0, 1.5, -0.1))
 	var vmi := n3d(mi, mi, "Visual")
-	modelo(vmi, mi, MOD + "personagens/minotauro.glb", Vector3.ZERO, 0, Vector3.ONE * 1.25)
+	# modelo do grupo, com esqueleto, machado e animações (personagens_grupo.py)
+	modelo(vmi, mi, MOD + "personagens/minotauro_grupo.glb", Vector3.ZERO, 0, Vector3.ONE * 2.9, "Corpo")
 	var faixa_mira := QuadMesh.new()
 	faixa_mira.size = Vector2(1.6, 4.0)
 	var mat_mira := StandardMaterial3D.new()
@@ -427,16 +428,18 @@ func minitaurinho(nome: String, script: String, pelo: Color, cor_tanga: Color, a
 	add(m, cap2, m, "Forma")
 	var vm := n3d(m, m, "Visual")
 	# modelo da folha de modelo (o comum leva a clava; o arremessador, não)
-	var glb := "minitaurinho_arremessador.glb" if arremessador else "minitaurinho.glb"
-	modelo(vm, m, MOD + "personagens/" + glb, Vector3.ZERO, 0, Vector3.ONE, "Corpo")
+	# modelo do grupo, com esqueleto e animações (personagens_grupo.py);
+	# o arremessador é o mesmo modelo com a textura recolorida
+	var glb := "minitaurinho_grupo_arremessador.glb" if arremessador else "minitaurinho_grupo.glb"
+	modelo(vm, m, MOD + "personagens/" + glb, Vector3.ZERO, 0, Vector3.ONE * 1.1, "Corpo")
 	if arremessador:
 		# a pedra na mão direita (sobe acima da cabeça antes do arremesso)
 		var pedra := SphereMesh.new()
-		pedra.radius = 0.17
-		pedra.height = 0.3
+		pedra.radius = 0.12
+		pedra.height = 0.22
 		pedra.radial_segments = 8
 		pedra.rings = 4
-		malha(vm, m, "Pedra", pedra, mat(Color("#8c8378"), 0.0, 0.9), Vector3(-0.25, 0.32, 0.12))
+		malha(vm, m, "Pedra", pedra, mat(Color("#8c8378"), 0.0, 0.9), Vector3(-0.24, 0.3, 0.1))
 	return m
 
 
@@ -936,7 +939,8 @@ func tela_titulo() -> Node3D:
 	modelo(sala, t, MOD + "props/ossos.glb", Vector3(2.2, 0, 3.4), 30, Vector3.ONE, "Ossos")
 	modelo(sala, t, MOD + "props/ossos.glb", Vector3(-3.0, 0, 0.8), -50, Vector3.ONE, "Ossos")
 	# o Minotauro (só o modelo, sem IA) e o Teseu de frente para ele
-	modelo(sala, t, MOD + "personagens/minotauro.glb", Vector3(0, 0, -2.6), 0, Vector3.ONE * 1.25, "Minotauro")
+	var mt := modelo(sala, t, MOD + "personagens/minotauro_grupo.glb", Vector3(0, 0, -2.6), 0, Vector3.ONE * 2.9, "Minotauro")
+	mt.set_script(load("res://scripts/salas/npc_boneco.gd"))  # respira (animação "parado")
 	var teseu := inst(OBJ + "teseu_prototipo.tscn") as Node3D
 	teseu.position = Vector3(0.4, 0.05, 3.2)
 	teseu.get_node("Visual").rotation.y = deg_to_rad(180)
@@ -1186,7 +1190,7 @@ func hud(f: Node) -> void:
 	banner.add_theme_constant_override("outline_size", 10)
 	add(hud, banner, f, "Banner")
 
-	var ajuda := rotulo("WASD andar · Espaço espada · Shift escudo · E usar · R reiniciar sala · Esc menu", 15)
+	var ajuda := rotulo("WASD andar · Espaço espada · Shift escudo · E usar · R reiniciar sala · Esc menu · F1 Raio-X", 15)
 	ajuda.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	ajuda.offset_left = 20
 	ajuda.offset_top = -34

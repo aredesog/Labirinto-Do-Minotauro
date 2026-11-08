@@ -24,6 +24,8 @@ var _segmentos: Array[MeshInstance3D] = []
 var _material: StandardMaterial3D
 var _emissor: Node3D
 var _brilho_impacto: OmniLight3D
+## Para o modo Raio-X: cada reflexão do quadro [ponto, d, n, r].
+var reflexoes: Array = []
 
 
 func _ready() -> void:
@@ -56,6 +58,7 @@ func _physics_process(_delta: float) -> void:
 	var direcao := _emissor.global_basis.z.normalized()
 	var excluir: Array[RID] = []
 	var usados := 0
+	reflexoes.clear()
 
 	for i in max_reflexoes + 1:
 		var fim := origem + direcao * alcance
@@ -76,6 +79,7 @@ func _physics_process(_delta: float) -> void:
 			var nova: Vector3 = alvo.refletir(direcao)
 			if nova == Vector3.ZERO:
 				break
+			reflexoes.append([ponto, direcao, alvo.normal(), nova])
 			origem = ponto
 			direcao = nova
 			excluir = [hit.rid]

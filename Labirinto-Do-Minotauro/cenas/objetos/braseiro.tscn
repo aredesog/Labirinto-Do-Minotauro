@@ -37,7 +37,7 @@ top_radius = 0.0
 bottom_radius = 0.16
 height = 0.45
 
-[node name="Braseiro" type="Node3D" unique_id=1509490222]
+[node name="Braseiro" type="Node3D" unique_id=715312745]
 script = ExtResource("1_cpp18")
 
 [node name="Modelo" type="Node3D" parent="." unique_id=1048687926 instance=ExtResource("2_iyeoh")]
@@ -45,35 +45,35 @@ script = ExtResource("1_cpp18")
 [node name="Estela" type="Node3D" parent="." unique_id=776670666 instance=ExtResource("3_6ufma")]
 transform = Transform3D(0.75, 0, 0, 0, 0.68, 0, 0, 0, 0.75, 0, 0, -0.6)
 
-[node name="SuporteSimbolo" type="Node3D" parent="." unique_id=244123234]
+[node name="SuporteSimbolo" type="Node3D" parent="." unique_id=1874022509]
 transform = Transform3D(0.75, 0, 0, 0, 0.75, 0, 0, 0, 0.75, 0, -0.02, -0.36)
 
-[node name="SuporteChao" type="Node3D" parent="." unique_id=1384590441]
+[node name="SuporteChao" type="Node3D" parent="." unique_id=312656313]
 transform = Transform3D(1.25, 0, 0, 0, -5.4639237e-08, 1.25, 0, -1.25, -5.4639237e-08, 0, 0.03, 0.95)
 
-[node name="Corpo" type="StaticBody3D" parent="." unique_id=2108616568]
+[node name="Corpo" type="StaticBody3D" parent="." unique_id=110725379]
 collision_mask = 0
 
-[node name="Forma" type="CollisionShape3D" parent="Corpo" unique_id=158667960]
+[node name="Forma" type="CollisionShape3D" parent="Corpo" unique_id=605063916]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
 shape = SubResource("CylinderShape3D_tc6e3")
 
-[node name="FormaEstela" type="CollisionShape3D" parent="Corpo" unique_id=1888785217]
+[node name="FormaEstela" type="CollisionShape3D" parent="Corpo" unique_id=1763551273]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, -0.6)
 shape = SubResource("BoxShape3D_8bhjd")
 
-[node name="Fogo" type="Node3D" parent="." unique_id=2131575452]
+[node name="Fogo" type="Node3D" parent="." unique_id=772149056]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.82, 0)
 
-[node name="ChamaFora" type="MeshInstance3D" parent="Fogo" unique_id=1413198629]
+[node name="ChamaFora" type="MeshInstance3D" parent="Fogo" unique_id=1995921206]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
 mesh = SubResource("CylinderMesh_vkdw1")
 
-[node name="ChamaDentro" type="MeshInstance3D" parent="Fogo" unique_id=1151468979]
+[node name="ChamaDentro" type="MeshInstance3D" parent="Fogo" unique_id=1632251578]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.24, 0)
 mesh = SubResource("CylinderMesh_gl7pf")
 
-[node name="Luz" type="OmniLight3D" parent="." unique_id=1167167693]
+[node name="Luz" type="OmniLight3D" parent="." unique_id=785393727]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 0)
 visible = false
 light_color = Color(1, 0.6039216, 0.23529412, 1)

@@ -22,6 +22,8 @@ var _morto := false
 
 @onready var _visual: Node3D = get_node_or_null("Visual")
 var _anim: AnimBoneco
+## Animações de esqueleto do modelo do grupo (parado, andar, atacar, dano...).
+var _modelo: AnimModelo
 var _golpe := 0.0
 
 
@@ -31,6 +33,7 @@ func _ready() -> void:
 	_espera = espera_ao_surgir
 	if _visual:
 		_anim = AnimBoneco.new(_visual)
+		_modelo = AnimModelo.new(_visual)
 	# surge do chão
 	if _visual:
 		_visual.scale = Vector3.ONE * 0.01
@@ -68,6 +71,10 @@ func _physics_process(delta: float) -> void:
 
 
 func _animar(delta: float) -> void:
+	if _modelo and _modelo.tem():
+		var hv := Vector2(velocity.x, velocity.z).length()
+		_modelo.atualizar(clampf(hv / maxf(velocidade, 0.1), 0.0, 1.0))
+		return
 	if _anim == null:
 		return
 	_golpe = maxf(_golpe - delta, 0.0)
@@ -98,6 +105,8 @@ func _comportamento(dir: Vector3, distancia: float, _delta: float) -> void:
 func _atacar(dir: Vector3) -> void:
 	_cooldown = intervalo_ataque
 	_golpe = 0.32
+	if _modelo:
+		_modelo.tocar("atacar", 1.6)
 	Som.tocar("grunhido", 0.0, 0.15)
 	if _visual:
 		var tw := create_tween()
@@ -112,6 +121,8 @@ func levar_dano(quantidade: int, direcao: Vector3 = Vector3.ZERO) -> void:
 		return
 	vida -= quantidade
 	_atordoado = 0.35
+	if _modelo:
+		_modelo.tocar("dano")
 	Som.tocar("acerto")
 	velocity = direcao.normalized() * 6.0
 	if _visual:

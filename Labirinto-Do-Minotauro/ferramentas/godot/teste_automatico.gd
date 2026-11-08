@@ -267,6 +267,25 @@ func _rodar() -> void:
 			await esperar(0.35)
 	await esperar(0.4)
 	await foto("06_E_espelhos")
+	# modo Raio-X (F1): vetores da reflexão nos espelhos, colisões, normais
+	var rx := fase.get_parent().find_child("RaioX", true, false)
+	if rx == null:
+		rx = root.find_child("RaioX", true, false)
+	checar(rx != null, "raio-x: nó criado pelo jogo")
+	if rx:
+		rx.alternar()
+		await esperar(0.3)
+		checar(rx._painel.text.contains("r = d") and rx._rotulos.size() >= 1, "raio-x: mostra d, n, r e o ângulo em cada espelho")
+		await foto("06b_raio_x_espelhos")
+		var antes: int = Toon.materiais_convertidos()
+		Toon.definir(false)
+		await esperar(0.2)
+		checar(antes > 0 and Toon.materiais_convertidos() == 0, "F3: volta para a iluminação PBR")
+		await foto("06c_pbr_sem_toon")
+		Toon.definir(true)
+		await esperar(0.2)
+		checar(Toon.materiais_convertidos() > 0, "F3: cel shading de novo")
+		rx.alternar()
 	await esperar(2.0)
 	checar(e.esta_concluida() and jogo.prisioneiros_libertados == 13, "E resolvida, 13 libertados")
 	checar(jogo.puzzles_concluidos.size() == 3, "3 enigmas")
@@ -631,5 +650,29 @@ func _luta_chefe(arena: Node) -> void:
 	checar(inimigos().is_empty(), "as crias somem junto")
 	await esperar(5.0)
 	checar(arena.esta_concluida(), "arena vencida")
-	checar(fase.get_node("HUD/Vitoria").visible, "tela de vitória aparece")
+	# final: o fio leva todos de volta à entrada, onde a Ariadne espera
+	await esperar(3.5)
+	var entrada: Node = null
+	for ar_ in jogo._areas():
+		if ar_.tipo == "inicio":
+			entrada = ar_
+	var atenienses := entrada.find_children("Ateniense*", "", false, false)
+	checar(atenienses.size() == 13, "final: os 13 atenienses saem junto com o Teseu")
+	var fio := entrada.find_child("FioFinal", false, false)
+	checar(fio != null and fio.get_child_count() >= 5, "final: o fio vermelho fica no chão até a Ariadne")
+	checar(jogo.area_atual == entrada, "final acontece na entrada do labirinto")
+	await foto("13a_final_saida")
+	jogo._pular = true
+	await esperar(3.0)
+	checar(fase.get_node("HUD/Vitoria").visible, "tela de vitória aparece (Esc pula o final)")
 	await foto("13_vitoria")
+	# créditos (rodando de novo só para a foto)
+	jogo._pular = false
+	var hud_c := fase.get_node("HUD")
+	hud_c.rolar_creditos()
+	await esperar(4.0)
+	checar(hud_c.find_child("Creditos", false, false) != null, "créditos sobem na tela")
+	await foto("13b_creditos")
+	jogo._pular = true
+	await esperar(1.5)
+	jogo._pular = false
