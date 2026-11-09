@@ -119,6 +119,8 @@ func _rodar() -> void:
 	checar(fase.get_node("HUD/Desenho").vida == 10, "HUD: 5 corações (10 meios)")
 	checar(teseu._anim is AnimTeseu and teseu._anim.corpo != null, "Teseu: animação procedural no Visual/Corpo")
 	checar(get_nodes_in_group("anfora_tutorial").size() == 3, "tutorial: 3 ânforas para quebrar na entrada")
+	await esperar(0.3)
+	await foto("22_tutorial_anforas")
 	var anf: Node3D = get_nodes_in_group("anfora_tutorial")[0]
 	anf.quebrar()
 	await esperar(0.2)
@@ -172,7 +174,9 @@ func _rodar() -> void:
 	checar(a.estado == 2, "A: puzzle ativo depois do combate")
 	checar(a.get_node("Puzzle").demonstrado, "A: cena curta mostra o que fazer (sem texto)")
 	checar(fase.get_node("HUD/Aviso").visible, "A: aviso em pictogramas aparece")
-	await esperar(4.0)
+	await esperar(1.0)
+	await foto("20_demo_estatuas")
+	await esperar(3.0)
 	checar(teseu._controle_ativo, "A: depois da cena o controle volta")
 	checar(Som.faixa_atual() == "enigma", "música de enigma depois do combate")
 	var pz_a := a.get_node("Puzzle")
@@ -183,7 +187,9 @@ func _rodar() -> void:
 			[2, Vector3.RIGHT], [2, Vector3.RIGHT], [2, Vector3.BACK]]:
 		est[mv[0]].empurrar(mv[1] * sx)
 		await esperar(0.35)
-	await esperar(1.8)
+	await esperar(0.9)
+	await foto("23_refens_livres")
+	await esperar(0.9)
 	checar(a.esta_concluida() and jogo.prisioneiros_libertados == 4, "A resolvida, 4 libertados")
 	checar(grades_fechadas(a) == 0, "A: grades abrem")
 	checar_sorteio(a, "A")
@@ -343,9 +349,15 @@ func _rodar() -> void:
 	var escala: float = teseu.get_node("Visual/Novelo").scale.x
 	teseu._invulneravel = 0.0
 	var fio := fase.find_child("FioAriadne", true, false)
-	checar(fio != null and fio.pontos.size() >= 1, "o fio de Ariadne existe no chão")
+	for k in 10:   # anda em zigue-zague para o fio aparecer no chão
+		teseu.global_position += Vector3(0.35 if k % 4 < 2 else -0.2, 0, -0.3)
+		await esperar(0.06)
+	checar(fio != null and fio.pontos.size() >= 3, "o fio de Ariadne fica no chão por onde ele anda")
+	await foto("21_fio_ariadne")
+	teseu._invulneravel = 0.0
 	teseu.levar_dano(1)
 	await esperar(0.6)
+	await foto("21b_fio_puxando")
 	checar(jogo.novelo == antes - 1, "morrer gasta uma volta do novelo")
 	checar(fio.puxando, "o fio puxa o Teseu de volta até a porta")
 	await esperar(1.2)
@@ -512,6 +524,21 @@ func _abertura_e_game_over() -> void:
 		await esperar(0.1)
 	checar(viu_balao, "abertura em pantomima: balões de pictogramas (celas, Minotauro, Ariadne)")
 	checar(fase.get_node("HUD/Dialogo").modulate.a < 0.05, "nenhuma caixa de texto na abertura")
+	await foto("17_abertura_refens")
+	# fotografa o Minotauro rugindo e o pensamento da Ariadne (só com janela)
+	if DisplayServer.get_name() != "headless":
+		var m_ab := fase.find_child("Minotauro", true, false)
+		var foi_mino := false
+		for k in 400:
+			await esperar(0.1)
+			if not foi_mino and m_ab and m_ab.estado == 1:
+				await esperar(0.9)
+				await foto("18_abertura_minotauro")
+				foi_mino = true
+			if fase.get_node("HUD").get_children().any(func(n): return n is Pensamento):
+				await esperar(2.5)
+				await foto("19_abertura_pensamento")
+				break
 	await foto("15_abertura_ariadne")
 	jogo._pular = true
 	await esperar(1.0)
@@ -679,7 +706,11 @@ func _luta_chefe(arena: Node) -> void:
 	await esperar(0.2)
 	checar(chefe.esta_morto(), "o Minotauro cai")
 	checar(inimigos().is_empty(), "as crias somem junto")
-	await esperar(5.0)
+	await foto("24_queda_foto")
+	await esperar(2.5)
+	await foto("24b_queda_camera_lenta")
+	await esperar(2.5)
+	await foto("25_queda_trofeu")
 	checar(arena.esta_concluida(), "arena vencida")
 	# final: o fio leva todos de volta à entrada, onde a Ariadne espera
 	await esperar(3.5)

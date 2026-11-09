@@ -1,3 +1,5 @@
+![Labirinto do Minotauro](docs/capturas/capa.png)
+
 # Labirinto do Minotauro
 
 Jogo 3D de ação e enigmas feito para a disciplina de **Computação Gráfica**
@@ -71,6 +73,9 @@ mais de 50 ícones vetoriais no mesmo estilo dos corações do HUD) organizado e
 O texto antigo continua como **dica do mouse** (tooltip) nos botões, para acessibilidade.
 Os créditos continuam com os nomes do grupo.
 
+![HUD sem texto: ícones, teclas desenhadas e setas nos portais](docs/capturas/01_inicio_portais.png)
+
+
 ### Abertura: a história contada como cinema (~40 s, Esc pula)
 Regra de ritmo: **emoção segura o plano** (2,5–4 s), **ação corta rápido** (0,5–1 s);
 silêncio antes do susto; plano de reação depois de cada acontecimento.
@@ -88,6 +93,10 @@ silêncio antes do susto; plano de reação depois de cada acontecimento.
    **contraplano** no Teseu, decidido; o **novelo voando em câmera lenta**; o pensamento do
    novelo; a regra; e o **plano de herói**: câmera baixa atrás do Teseu olhando o portal aceso.
 
+| Reféns chorando | O Minotauro ruge | A Ariadne imagina o plano |
+|---|---|---|
+| ![](docs/capturas/17_abertura_refens.png) | ![](docs/capturas/18_abertura_minotauro.png) | ![](docs/capturas/19_abertura_pensamento.png) |
+
 **Queda do Minotauro:** o golpe final **congela como uma foto** em preto e branco; câmera
 lenta com **3 ângulos** (baixo, lado, cima); **silêncio** num plano parado de longe; os
 minitaurinhos se assustam e fogem; o Teseu ergue a espada e a música entra triunfal.
@@ -95,6 +104,11 @@ minitaurinhos se assustam e fogem; o Teseu ergue a espada e a música entra triu
 
 Dentro do jogo, ao entrar numa sala com cela, os atenienses gritam `[!]` de novo,
 ligando a cena de abertura ao objetivo da sala.
+
+| Golpe final congelado | Câmera lenta | Troféu |
+|---|---|---|
+| ![](docs/capturas/24_queda_foto.png) | ![](docs/capturas/24b_queda_camera_lenta.png) | ![](docs/capturas/25_queda_trofeu.png) |
+
 
 ### Linguagem de cinema nas cenas
 - **Correção de cor por ato** (`scripts/visual/cinema.gdshader`: tinta, saturação, contraste,
@@ -117,11 +131,19 @@ vez de teleportar, **o fio o puxa de volta** pelo mesmo caminho (enrolando enqua
 e só então ele renasce na porta. *CG:* a malha é refeita a cada quadro (`ImmediateMesh`,
 triangle strip): tangente `t = p[i+1] − p[i−1]` e lateral `l = normalize(−t.z, 0, t.x)·largura/2`.
 
+| O fio no chão | O fio puxando o Teseu de volta |
+|---|---|
+| ![](docs/capturas/21_fio_ariadne.png) | ![](docs/capturas/21b_fio_puxando.png) |
+
+
 ### Tutorial jogável e teclas na hora certa
 - Na entrada há **3 ânforas** para quebrar com a espada (a tecla [Espaço] aparece em cima delas).
 - As **setas** aparecem em cima do Teseu até ele andar; [Espaço] aparece sobre os primeiros
   inimigos; [Shift][escudo] aparece quando vem uma pedra e ele ainda nunca bloqueou.
 - Cada dica some sozinha quando o jogador já aprendeu.
+
+![Ânforas do tutorial com a tecla de espaço](docs/capturas/22_tutorial_anforas.png)
+
 
 ### Peso nos golpes (game feel)
 *Hitstop* (o tempo congela 0,06 s quando a espada acerta, `Efeitos.congelar` com
@@ -136,6 +158,9 @@ que derruba.
   assustados; câmera baixa no Teseu pulando com o troféu. No final, os atenienses
   comemoram com corações.
 
+![Atenienses libertados comemorando](docs/capturas/23_refens_livres.png)
+
+
 ### Enigmas que se explicam sozinhos
 Na 1ª vez que um enigma é liberado, a câmera faz uma mini-cena (Espaço/E pula),
 como num tutorial do Angry Birds:
@@ -148,6 +173,9 @@ como num tutorial do Angry Birds:
 
 A cena só *mostra*: o enigma já está ativo e nada é mexido de verdade (os braseiros só
 piscam, as estátuas fantasmas não têm colisão). Desligar: `Config.demonstrar_enigmas`.
+
+![Demonstração do enigma das estátuas](docs/capturas/20_demo_estatuas.png)
+
 
 ### Teseu novo (modelo do Tripo3D) com animação procedural
 
@@ -332,6 +360,12 @@ godot --path . --script res://ferramentas/godot/teste_automatico.gd
 ```
 
 ---
+
+**Fotos do README:** rode o teste automático **com janela** (sem `--headless`); ele joga
+sozinho e salva todas as capturas em `user://capturas/` — no Windows,
+`%APPDATA%\Godot\app_userdata\Labirinto Do Minotauro (teste)\capturas`. Copie os `.png`
+para `docs/capturas/` e o README já mostra as imagens novas.
+
 
 ## O que pode melhorar
 
