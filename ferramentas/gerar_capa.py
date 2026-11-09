@@ -309,3 +309,34 @@ while x < x_tit + 1150:
 capa = fundo.convert('RGB').resize((W // 2, H // 2), Image.LANCZOS)
 capa.save(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)), '..', 'docs', 'capturas', 'capa.png'), optimize=True)
 print('ok')
+
+
+# ---------------------------------------------------------------- elenco (docs/capturas/personagens.png)
+def elenco():
+    LW, LH = 2560, 960
+    fundo2 = gradiente_vertical(LW, LH, (30, 20, 48), (70, 40, 60)).convert('RGBA')
+    chao2 = Image.new('RGBA', (LW, LH), (0, 0, 0, 0))
+    ImageDraw.Draw(chao2).ellipse([-200, 760, LW + 200, 1300], fill=(203, 182, 142, 70))
+    fundo2.alpha_composite(chao2.filter(ImageFilter.GaussianBlur(30)))
+    lista = [  # arquivo, animação, tempo, largura, altura, giro
+        ('teseu_novo.glb', None, 0.0, 520, 640, 0.35),
+        ('ariadne_grupo.glb', 'parado', 0.0, 460, 600, 0.3),
+        ('minitaurinho_grupo.glb', 'atacar', 0.15, 440, 520, -0.3),
+        ('minitaurinho_grupo_arremessador.glb', 'erguer', 0.4, 440, 560, -0.4),
+        ('minotauro_grupo.glb', 'rugir', 0.25, 760, 900, -0.45),
+    ]
+    xs = [120, 610, 1080, 1500, 1820]
+    for (arq, an, t, lw, lh, giro), x in zip(lista, xs):
+        im, _, _ = render(carregar(P + arq, an, t), lw, lh, yaw=giro, pitch=0.1,
+                          cor_luz=(1.06, 1.0, 0.95), cor_sombra=(0.48, 0.38, 0.55), contorno=4)
+        base = 930
+        sombra = Image.new('RGBA', (LW, LH), (0, 0, 0, 0))
+        ImageDraw.Draw(sombra).ellipse([x + lw * 0.2, base - 22, x + lw * 0.8, base + 22], fill=(20, 8, 20, 130))
+        fundo2.alpha_composite(sombra.filter(ImageFilter.GaussianBlur(12)))
+        fundo2.alpha_composite(im, (x, base - lh + 20))
+    saida = __import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)), '..', 'docs', 'capturas', 'personagens.png')
+    fundo2.convert('RGB').resize((LW // 2, LH // 2), Image.LANCZOS).save(saida, optimize=True)
+
+
+elenco()
+print('elenco ok')

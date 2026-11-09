@@ -1,11 +1,11 @@
-"""Converte o teseu.blend (Tripo3D, 1,9 mi triângulos) num .glb leve para o jogo.
+"""Converte o teseu.blend (1,9 mi triângulos) num .glb leve para o jogo.
   1. lê posições / cantos / UV direto do .blend (Blender 5.x)
   2. separa os vértices por UV (costuras viram vértices duplicados)
   3. simplifica com meshoptimizer (mantém as costuras de UV)
   4. normais suaves (somadas por posição, sem quebrar nas costuras)
   5. grava GLB (Y para cima) com a textura base reduzida
 Uso (o .blend do Blender 5 vem comprimido com zstd: pip install zstandard meshoptimizer numpy pillow):
-  python3 ferramentas/blender/tripo_para_glb.py teseu.blend assets/modelos/personagens/teseu_novo.glb 12000
+  python3 ferramentas/blender/blend_para_glb.py teseu.blend assets/modelos/personagens/teseu_novo.glb 12000
 """
 import io
 import json

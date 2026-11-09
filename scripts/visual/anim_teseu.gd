@@ -2,7 +2,7 @@ class_name AnimTeseu
 extends RefCounted
 ## Animação procedural do Teseu — funciona com QUALQUER modelo.
 ##
-## O modelo do Tripo3D é uma malha única (sem braços e pernas separados),
+## O modelo do Teseu é uma malha única (sem braços e pernas separados),
 ## então a animação principal mexe o CORPO INTEIRO, no estilo "boneco de
 ## brinquedo" (Animal Crossing / Link's Awakening):
 ##   andar   -> quica a cada passo, ginga de um lado para o outro, inclina

@@ -1,5 +1,5 @@
 """Leitor mínimo de .blend (Blender 5.x, cabeçalho grande) — só o necessário
-para tirar malha, UV e textura de um modelo do Tripo3D."""
+para tirar malha, UV e textura de um modelo."""
 import struct
 import sys
 

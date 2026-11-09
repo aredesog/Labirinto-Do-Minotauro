@@ -212,7 +212,7 @@ func gerar_objetos() -> void:
 	cap.position = Vector3(0, 0.6, 0)
 	add(t, cap, t, "Forma")
 	var vis := n3d(t, t, "Visual")
-	# modelo do Tripo3D (teseu_novo.glb: 1 m de altura, pés na origem) -> 1,25 m
+	# modelo novo do Teseu (teseu_novo.glb: 1 m de altura, pés na origem) -> 1,25 m
 	modelo(vis, t, MOD + "personagens/teseu_novo.glb", Vector3.ZERO, 0, Vector3.ONE * 1.25, "Corpo")
 	# o modelo já segura a espada na mão esquerda (+X): escudo no braço direito (-X)
 	modelo(vis, t, MOD + "armas/escudo_hoplon.glb", Vector3(-0.34, 0.45, 0.06), -65,

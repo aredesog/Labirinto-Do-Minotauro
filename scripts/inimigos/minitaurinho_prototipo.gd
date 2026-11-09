@@ -29,6 +29,7 @@ var _golpe := 0.0
 var _na_cena := false
 var _correndo_cena := false
 var _destino_cena := Vector3.ZERO
+var _caminho_cena: Array = []
 
 
 func _ready() -> void:
@@ -178,9 +179,19 @@ func _mover_na_cena(delta: float) -> void:
 		falta.y = 0.0
 		if falta.length() > 0.3:
 			dir = falta.normalized()
+		elif not _caminho_cena.is_empty():
+			_destino_cena = _caminho_cena.pop_front()
 	if _visual and dir != Vector3.ZERO:
 		_visual.rotation.y = lerp_angle(_visual.rotation.y, atan2(dir.x, dir.z), 12.0 * delta)
 	velocity.x = dir.x * velocidade * 1.7
 	velocity.z = dir.z * velocidade * 1.7
 	move_and_slide()
 	_animar(delta)
+
+
+
+## Corre passando por vários pontos (ex.: pelos corredores do labirinto).
+func correr_no_caminho(pontos: Array) -> void:
+	_caminho_cena = pontos.duplicate()
+	if not _caminho_cena.is_empty():
+		correr_na_cena(_caminho_cena.pop_front())

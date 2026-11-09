@@ -83,9 +83,9 @@ func checar_sorteio(a: Node, rotulo: String) -> void:
 	var pend: int = jogo.puzzles_pendentes(a).size()
 	checar(tipos.size() == a.portas().size(), "%s: todos os %d portais acendem" % [rotulo, a.portas().size()])
 	if proxima >= jogo.sala_do_minotauro:
-		checar(tipos.all(func(t): return t == "chefe"), "%s: saindo da 9ª sala todos levam ao Minotauro %s" % [rotulo, str(tipos)])
+		checar(tipos.all(func(t): return t == "labirinto"), "%s: saindo da 9ª sala todos levam ao labirinto do Minotauro %s" % [rotulo, str(tipos)])
 	else:
-		checar(not ("chefe" in tipos), "%s: Minotauro só na sala %d (próxima=%d) %s" % [rotulo, jogo.sala_do_minotauro, proxima, str(tipos)])
+		checar(not ("labirinto" in tipos), "%s: labirinto só na sala %d (próxima=%d) %s" % [rotulo, jogo.sala_do_minotauro, proxima, str(tipos)])
 		if pend > 0:
 			checar("puzzle" in tipos, "%s: há portal para um enigma pendente %s" % [rotulo, str(tipos)])
 		if pend > 0 and pend >= vagas:
@@ -107,7 +107,8 @@ func _rodar() -> void:
 	cam = fase.get_node("Camera")
 	var inicio := fase.find_child("Inicio", true, false)
 	print("== Início ==")
-	checar(get_nodes_in_group("area_sala").size() == 8, "8 cômodos (início, 6 salas, arena)")
+	checar(get_nodes_in_group("area_sala").size() == 12, "12 áreas (início, 6 salas, 3 labirintos até os enigmas, labirinto, arena)")
+	jogo.labirinto_antes_do_enigma = false   # ligado só no teste dele (antes da sala A)
 	checar(fase.find_child("Corredores", true, false) == null, "não há mais corredores")
 	checar_sorteio(inicio, "início")
 	for id in ["A", "B", "C", "D", "E", "F"]:
@@ -137,7 +138,7 @@ func _rodar() -> void:
 	checar(tipos_destino(inicio).all(func(t): return t == "puzzle"), "sala 8 com 3 enigmas faltando: todos os portais levam a enigma")
 	jogo.salas_visitadas = 9
 	jogo.sortear_destinos(inicio)
-	checar(tipos_destino(inicio).all(func(t): return t == "chefe"), "depois da 9ª sala: todos os portais levam ao Minotauro")
+	checar(tipos_destino(inicio).all(func(t): return t == "labirinto"), "depois da 9ª sala: todos os portais levam ao labirinto")
 	jogo.salas_visitadas = 0
 	jogo.sortear_destinos(inicio)
 	await esperar(1.0)
@@ -166,8 +167,26 @@ func _rodar() -> void:
 	await matar_inimigos()
 
 	# ------------------------------------------------ A: estátuas
-	print("== A: estátuas ==")
+	print("== Labirinto até o enigma ==")
 	var a := sala("A")
+	if a.estado == 0:   # ainda não visitada
+		jogo.labirinto_antes_do_enigma = true
+		var n_antes: int = jogo.salas_visitadas
+		await ir(a)
+		var mini: Node = jogo.area_atual
+		checar(mini is MiniLabirinto and mini.destino == a, "portal de enigma leva antes a um trecho de labirinto")
+		checar(mini.contem(teseu.global_position), "Teseu chega dentro do labirinto")
+		checar(jogo.salas_visitadas == n_antes + 1, "o labirinto conta como a sala")
+		var passos: int = mini.caminho_solucao().size()
+		checar(passos >= MiniLabirinto.CAMINHO_MIN and passos <= MiniLabirinto.CAMINHO_MAX, "caminho curto até a saída (%d células)" % passos)
+		await esperar(0.6)
+		await foto("28_labirinto_enigma")
+		teseu.global_position = mini.saida_global()
+		await esperar(1.0)
+		checar(jogo.area_atual == a, "a saída dourada leva à sala do enigma")
+		checar(jogo.salas_visitadas == n_antes + 1, "labirinto + enigma contam uma sala só")
+		jogo.labirinto_antes_do_enigma = false
+	print("== A: estátuas ==")
 	if a.estado != 2:
 		await ir(a)
 		await matar_inimigos()
@@ -378,16 +397,32 @@ func _rodar() -> void:
 	jogo.salas_visitadas = 9
 	jogo.sortear_destinos(b2)
 	checar_sorteio(b2, "9ª sala")
-	var p_chefe: Node3D = null
+	var p_lab: Node3D = null
 	for p in portas_ativas(b2):
-		if p.destino.tipo == "chefe":
-			p_chefe = p
-	checar(p_chefe != null, "sala vencida depois dos 3 enigmas tem portal para o Minotauro")
-	if p_chefe:
-		teseu.global_position = p_chefe.global_position - p_chefe.global_basis.z * 0.5 + Vector3.UP * 0.1
+		if p.destino.tipo == "labirinto":
+			p_lab = p
+	checar(p_lab != null, "sala vencida depois dos 3 enigmas tem portal para o labirinto")
+	if p_lab:
+		teseu.global_position = p_lab.global_position - p_lab.global_basis.z * 0.5 + Vector3.UP * 0.1
 		await esperar(1.0)
+		var lab := fase.find_child("Labirinto", true, false)
 		var arena := fase.find_child("Arena", true, false)
-		checar(arena.contem(teseu.global_position), "portal leva à arena")
+		checar(lab != null and jogo.area_atual == lab and lab.contem(teseu.global_position), "portal leva à entrada do labirinto")
+		checar(jogo.salas_visitadas == jogo.sala_do_minotauro, "o labirinto conta como a 10ª sala")
+		var caminho: PackedVector3Array = lab.caminho_solucao()
+		checar(caminho.size() >= 5, "o labirinto sempre tem caminho da entrada até a arena (%d passos)" % caminho.size())
+		await esperar(0.6)
+		await foto("26_labirinto")
+		# segue o caminho certo, célula por célula (o fio vai ficando no chão)
+		for k in caminho.size():
+			teseu.global_position = caminho[k] + Vector3.UP * 0.1
+			await esperar(0.05)
+		checar(jogo.area_atual == lab, "ainda no labirinto antes do portão")
+		await foto("27_labirinto_fio")
+		teseu.global_position = arena.to_global(Vector3(0, 0.1, 6.0))
+		await esperar(0.6)
+		checar(jogo.area_atual == arena, "atravessar o portão do centro leva à arena")
+		checar(jogo.salas_visitadas == jogo.sala_do_minotauro, "entrar na arena não conta sala a mais")
 		await _luta_chefe(arena)
 	await _abertura_e_game_over()
 	print("== RESULTADO: %d falha(s) ==" % falhas)

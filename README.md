@@ -17,8 +17,12 @@ Minotauro. O novelo de Ariadne o traz de volta quando ele cai, mas só 3 vezes.
 - **Fio de Ariadne no chão:** ao cair, o fio puxa o Teseu de volta até a porta.
 - **3 enigmas** (estátuas, braseiros e espelhos), cada um com uma demonstração rápida
   na primeira vez.
-- **Salas sorteadas:** cada porta é um portal para uma sala ao acaso. O Minotauro
-  espera na 10ª sala.
+- **Salas sorteadas:** cada porta é um portal para uma sala ao acaso.
+- **O labirinto de verdade:** a 10ª etapa é um labirinto sorteado a cada partida, com a
+  arena do Minotauro no centro. Uma coluna de luz vermelha e o rugido guiam o jogador,
+  e o fio de Ariadne mostra por onde ele já passou.
+- **Labirintos até os enigmas:** na primeira ida a cada enigma, o Teseu atravessa um
+  trecho curto de labirinto até um portal dourado.
 - **Tutorial na entrada** e dicas de tecla que aparecem só quando servem.
 
 ## Como rodar
@@ -49,6 +53,7 @@ Em computadores mais fracos, use **Opções → qualidade baixa**.
 | Raycast e reflexão especular `r = d − 2(d·n)n` | `scripts/puzzles/espelhos/fonte_luz.gd` |
 | Animação procedural do Teseu (squash & stretch com volume constante) | `scripts/visual/anim_teseu.gd` |
 | Fio de Ariadne como malha gerada a cada quadro (triangle strip) | `scripts/visual/fio_ariadne.gd` |
+| Labirinto procedural (backtracking recursivo + busca em largura) desenhado com MultiMesh | `scripts/salas/labirinto.gd`, `mini_labirinto.gd` |
 | Câmera de cinema: travelling, plano holandês e vertigo `d2 = d1·tan(fov1/2)/tan(fov2/2)` | `scripts/visual/camera_diorama.gd` |
 | Correção de cor, vinheta e granulação (pós-processamento) | `scripts/visual/cinema.gdshader` |
 | Tilt-shift (efeito maquete) | `scripts/visual/tilt_shift.gdshader` |
@@ -82,4 +87,4 @@ docs/capturas/  imagens do README
 
 ## Grupo "Herdeiros de Luca"
 
-Guilherme Aredes · Melissa Alves · Mell Dias · Diego Vinna · Francisco Toro · Pedro Ferreira
+Guilherme Aredes · Melissa Alves · Mel Dias · Diego Vinna · Francisco Toro · Pedro Ferreira

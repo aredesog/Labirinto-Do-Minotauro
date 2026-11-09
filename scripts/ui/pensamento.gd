@@ -6,20 +6,24 @@ extends Control
 ##
 ## Roteiros:
 ##   "missao" — Teseu anda até a cela, quebra a grade e o ateniense pula feliz;
-##              depois golpeia o Minotauro, que cai tonto, e comemora (troféu).
+##              depois atravessa um labirinto desenrolando o fio vermelho até o
+##              Minotauro, golpeia, ele cai tonto, e comemora (troféu).
 ##   "novelo" — um minitaurinho derruba o Teseu, o fio vermelho do novelo o
 ##              puxa de volta para a entrada e um dos 3 novelos se esvazia.
 ##
 ## Criado pelo HUD:  await hud.pensar(ariadne, "missao")
 
-const DURACAO := {"missao": 7.2, "novelo": 5.0}
+## O trecho do labirinto entra entre a cela e o Minotauro (dura LABIRINTO s).
+const LABIRINTO := 2.8
+const DURACAO := {"missao": 7.2 + LABIRINTO, "novelo": 5.0}
 ## A animação roda mais rápida que o roteiro em segundos (ritmo da cena).
 const VELOCIDADE := 1.0
 ## Sons sincronizados com a animação: [segundo, som, volume, tom]
 const SONS := {
 	"missao": [[1.25, "espada", -4.0, 1.0], [1.55, "grade", -4.0, 1.1], [2.1, "cura", -4.0, 1.0],
-		[4.5, "espada", -2.0, 0.9], [4.6, "acerto", -4.0, 0.8], [5.2, "impacto", -6.0, 1.0],
-		[5.5, "resolvido", -6.0, 1.0]],
+		[3.6, "novelo", -6.0, 1.0], [5.9, "rugido", -14.0, 0.9],
+		[4.5 + 2.8, "espada", -2.0, 0.9], [4.6 + 2.8, "acerto", -4.0, 0.8], [5.2 + 2.8, "impacto", -6.0, 1.0],
+		[5.5 + 2.8, "resolvido", -6.0, 1.0]],
 	"novelo": [[0.55, "dano", -4.0, 1.0], [1.4, "novelo", -4.0, 1.0], [3.0, "erro", -8.0, 1.2]],
 }
 
@@ -189,7 +193,17 @@ func _cena_missao(area: Rect2) -> void:
 			var g := _k(_t, 1.15, 1.45)
 			_icone("espada", pt + Vector2(r * 0.9, -r * 0.2), r * 0.7, lerpf(-1.2, 0.9, g), alfa)
 		return
-	# --- parte 2: o Minotauro
+	if _t < 3.4 + LABIRINTO:
+		_cena_labirinto(area, _t - 3.4)
+		return
+	# --- parte 3: o Minotauro (os tempos abaixo contam como se o labirinto não existisse)
+	var t_real := _t
+	_t -= LABIRINTO
+	_cena_minotauro(area, r)
+	_t = t_real
+
+
+func _cena_minotauro(area: Rect2, r: float) -> void:
 	var alfa2 := _k(_t, 3.4, 3.7)
 	var kq := _k(_t, 4.6, 5.2)
 	var pm := _p(area, 0.55, 0.08)
@@ -241,3 +255,73 @@ func _cena_novelo(area: Rect2) -> void:
 		_icone("estrelas", pt + Vector2(0, -r * 1.1), r * 0.45)
 	if _t > 2.9:
 		_icone("certo", pt + Vector2(0, -r * 1.3), r * 0.4 * _k(_t, 2.9, 3.1))
+
+
+
+# --------------------------------------------------------------------------
+# Trecho do labirinto: um labirintinho em zigue-zague; o Teseu atravessa
+# desenrolando o fio vermelho até o Minotauro, que espera no fim.
+# Coordenadas da cena: x de -0,9 a 0,9 (6 colunas), y de -0,45 a 0,45 (3 linhas).
+# --------------------------------------------------------------------------
+const CAMINHO_LAB := [Vector2(-1.0, 0.3), Vector2(-0.75, 0.3), Vector2(-0.45, 0.3), Vector2(-0.45, -0.3),
+	Vector2(-0.15, -0.3), Vector2(-0.15, 0.3), Vector2(0.15, 0.3), Vector2(0.15, -0.3),
+	Vector2(0.45, -0.3), Vector2(0.45, 0.0), Vector2(0.72, 0.0)]
+## Paredes internas verticais: [x, linha da passagem (0 = em cima, 1 = meio, 2 = embaixo)]
+const PAREDES_LAB := [[-0.6, 2], [-0.3, 0], [0.0, 2], [0.3, 0], [0.6, 1]]
+
+
+func _cena_labirinto(area: Rect2, t: float) -> void:
+	var alfa := _k(t, 0.0, 0.3)
+	var cor_parede := Color(0.72, 0.67, 0.79, alfa)
+	var cor_borda := Color(0.16, 0.07, 0.06, alfa)
+	var w := maxf(area.size.y * 0.05, 3.0)
+	# chão
+	draw_rect(Rect2(_p(area, -0.9, -0.45), _p(area, 0.9, 0.45) - _p(area, -0.9, -0.45)), Color(0.86, 0.78, 0.6, alfa * 0.8))
+	var segmentos: Array = []
+	# borda (com a entrada à esquerda, embaixo)
+	segmentos.append([Vector2(-0.9, -0.45), Vector2(0.9, -0.45)])
+	segmentos.append([Vector2(0.9, -0.45), Vector2(0.9, 0.45)])
+	segmentos.append([Vector2(-0.9, 0.45), Vector2(0.9, 0.45)])
+	segmentos.append([Vector2(-0.9, -0.45), Vector2(-0.9, 0.15)])
+	for pw in PAREDES_LAB:
+		var x: float = pw[0]
+		var gap: int = pw[1]
+		var y0 := -0.45 + gap * 0.3
+		if gap > 0:
+			segmentos.append([Vector2(x, -0.45), Vector2(x, y0)])
+		if gap < 2:
+			segmentos.append([Vector2(x, y0 + 0.3), Vector2(x, 0.45)])
+	# becos sem saída (só para parecer labirinto)
+	segmentos.append([Vector2(-0.9, -0.15), Vector2(-0.72, -0.15)])
+	segmentos.append([Vector2(0.6, 0.15), Vector2(0.78, 0.15)])
+	for sg in segmentos:
+		draw_line(_p(area, sg[0].x, sg[0].y), _p(area, sg[1].x, sg[1].y), cor_borda, w + 4.0, true)
+	for sg in segmentos:
+		draw_line(_p(area, sg[0].x, sg[0].y), _p(area, sg[1].x, sg[1].y), cor_parede, w, true)
+	# o Minotauro espera no fim, balançando de raiva
+	var r := area.size.y * 0.16
+	var meta: Vector2 = CAMINHO_LAB[CAMINHO_LAB.size() - 1]
+	_icone("minotauro", _p(area, meta.x + 0.06, meta.y) + Vector2(sin(t * 9.0) * 2.0, 0), r * 1.15, 0.0, alfa)
+	# o Teseu anda pelo caminho (por comprimento de arco) e o fio vai ficando
+	var comp := [0.0]
+	for i in range(1, CAMINHO_LAB.size()):
+		comp.append(comp[i - 1] + (CAMINHO_LAB[i] - CAMINHO_LAB[i - 1]).length())
+	var total: float = comp[comp.size() - 1] - 0.12
+	var dist := _suave(_k(t, 0.3, LABIRINTO - 0.3)) * total
+	var fio := PackedVector2Array([_p(area, CAMINHO_LAB[0].x, CAMINHO_LAB[0].y)])
+	var pos: Vector2 = CAMINHO_LAB[0]
+	for i in range(1, CAMINHO_LAB.size()):
+		var a: Vector2 = CAMINHO_LAB[i - 1]
+		var b: Vector2 = CAMINHO_LAB[i]
+		if dist >= comp[i]:
+			fio.append(_p(area, b.x, b.y))
+			pos = b
+			continue
+		var f: float = (dist - float(comp[i - 1])) / maxf(float(comp[i]) - float(comp[i - 1]), 0.0001)
+		pos = a.lerp(b, clampf(f, 0.0, 1.0))
+		fio.append(_p(area, pos.x, pos.y))
+		break
+	if fio.size() >= 2:
+		draw_polyline(fio, Color(0.82, 0.18, 0.15, alfa), maxf(w * 0.6, 2.5), true)
+	var pulo := absf(sin(t * 14.0)) * 3.0
+	_icone("teseu", _p(area, pos.x, pos.y) + Vector2(0, -r * 0.35 - pulo), r * 0.95, 0.0, alfa)

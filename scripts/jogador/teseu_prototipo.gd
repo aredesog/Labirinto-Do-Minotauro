@@ -2,7 +2,7 @@ class_name Teseu
 extends CharacterBody3D
 ## Teseu (jogador).
 ##
-## MODELO NOVO (Tripo3D): exporte do Blender como
+## MODELO NOVO: exporte do Blender como
 ##   assets/modelos/personagens/teseu_novo.glb
 ## (File > Export > glTF 2.0, formato "glTF Binary"). Se esse arquivo existir,
 ## ele entra no lugar do boneco antigo sozinho: o script mede a malha, ajusta
@@ -42,7 +42,7 @@ signal vida_mudou(atual: int, maximo: int)
 @export var altura_modelo_novo: float = 1.25
 ## Giro (graus) do modelo novo, caso ele venha olhando para trás.
 @export var giro_modelo_novo: float = 0.0
-## O modelo do Tripo já tem espada na mão? Então esconda a espada extra.
+## O modelo já tem espada na mão? Então esconda a espada extra.
 @export var esconder_espada_extra: bool = true
 
 const MODELO_NOVO := "res://assets/modelos/personagens/teseu_novo.glb"

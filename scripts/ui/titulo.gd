@@ -21,9 +21,9 @@ Francisco Toro
 Pedro Ferreira
 
 Personagens (Minotauro, minitaurinho, Ariadne): modelados pelo grupo
-Rig e animações: Blender · cenário e objetos gerados por script Python
+Modelagem, rig e animações: Blender
 Motor: Godot 4.7 (renderizador Compatibilidade)
-Sons e músicas: sintetizados por código (numpy/scipy)
+Sons e músicas: feitos pelo grupo
 Inspiração visual: The Legend of Zelda: Link's Awakening
 
 Baseado no mito grego de Teseu, Ariadne e o Minotauro."""

@@ -50,6 +50,8 @@ signal salas_mudou(numero: int, total: int)
 @export_range(0.0, 1.0) var chance_enigma_extra: float = 0.3
 ## Semente do sorteio (0 = aleatório a cada partida).
 @export var semente: int = 0
+## Antes de cada enigma (só na 1ª visita), um trecho de labirinto até ele.
+@export var labirinto_antes_do_enigma := true
 ## Cena da tela de título (para o botão "Menu inicial").
 @export_file("*.tscn") var cena_titulo: String = "res://cenas/titulo.tscn"
 ## Intensidade padrão do tilt-shift (cada sala multiplica pelo seu "tilt_shift").
@@ -71,6 +73,12 @@ var _pular := false
 ## O fio vermelho no chão (FioAriadne).
 var _fio: FioAriadne
 var _cena_queda := false
+## O labirinto em volta da arena (gerado na partida).
+var _labirinto: Labirinto
+## Sala de enigma -> o trecho de labirinto que leva até ela.
+var _corredores := {}
+## Enigmas cujo labirinto já foi atravessado (não repete).
+var _corredor_feito := {}
 
 
 func _enter_tree() -> void:
@@ -112,6 +120,8 @@ func _ready() -> void:
 			sortear_destinos(a)
 			_aplicar_tilt(a)
 			_montar_tutorial(a)
+	_montar_labirinto()
+	_montar_corredores()
 	Som.musica("exploracao", 1.5)
 	novelo_mudou.emit(novelo)
 	prisioneiros_mudou.emit(prisioneiros_libertados, total_prisioneiros)
@@ -218,13 +228,24 @@ func _abertura() -> void:
 		var cela := celas[0] as Node3D
 		var sala_c := cela.get_parent() as Node3D
 		var centro_c := sala_c.global_position if sala_c else cela.global_position
-		# 2. plano bem alto e lento: o labirinto é enorme, eles são pequenos
+		# 2. SOBREVOO DO LABIRINTO: enorme, com a coluna de luz vermelha e o
+		#    Minotauro lá no centro. A câmera desce devagar sobre os corredores.
 		Som.musica("enigma", 1.5)
-		_corte_seco(cam, centro_c + Vector3(0, 24.0, 6.0), cela.to_global(Vector3(0, 0.5, -0.6)), 50.0)
-		hud.preto(false, 0.8)
-		if cam:
-			cam.mover_plano(centro_c + Vector3(-1.0, 9.0, 5.0), cela.to_global(Vector3(0, 0.6, -0.6)), 3.2)
-		await _esperar_cena(3.2)
+		if _labirinto:
+			var c0 := _labirinto.global_position
+			_labirinto.mostrar_coluna(true)
+			_corte_seco(cam, c0 + Vector3(-12.0, 54.0, 36.0), c0 + Vector3(0, 0, 2.0), 50.0)
+			hud.preto(false, 0.8)
+			if cam:
+				cam.mover_plano(c0 + Vector3(-3.0, 30.0, 22.0), c0 + Vector3(0, 0, -1.0), 4.0)
+			await _esperar_cena(4.0)
+			_labirinto.mostrar_coluna(false)
+		else:
+			_corte_seco(cam, centro_c + Vector3(0, 24.0, 6.0), cela.to_global(Vector3(0, 0.5, -0.6)), 50.0)
+			hud.preto(false, 0.8)
+			if cam:
+				cam.mover_plano(centro_c + Vector3(-1.0, 9.0, 5.0), cela.to_global(Vector3(0, 0.6, -0.6)), 3.2)
+			await _esperar_cena(3.2)
 		# 3. grades em primeiro plano, a câmera entra devagar entre as barras
 		_corte_seco(cam, cela.to_global(Vector3(0.35, 0.95, 1.1)), cela.to_global(Vector3(0.0, 0.8, -0.8)), 45.0)
 		if cam:
@@ -322,7 +343,37 @@ func _abertura() -> void:
 		if not _pular:
 			crias = _crias_na_cena(mino)
 		await _esperar_cena(1.4)
-		# 7. eles correm na direção da câmera (= do Teseu)... e corte seco no preto
+		# 7. eles saem pelo portão e CORREM PELOS CORREDORES do labirinto, atrás
+		#    do Teseu — a câmera persegue o primeiro, de cima e de trás
+		if _labirinto and not _pular:
+			for c in crias:
+				if is_instance_valid(c):
+					c.queue_free()
+			crias = _crias_no_labirinto(mino)
+			var lider: Node3D = null
+			if not crias.is_empty():
+				lider = crias[0] as Node3D
+			if lider:
+				var c0 := lider.global_position
+				_corte_seco(cam, c0 + Vector3(0, 5.0, -4.0), c0 + Vector3(0, 0.4, 3.0), 60.0)
+				if cam:
+					cam.set("mao", 1.6)
+				mino.rugir_na_cena()
+				var t_perseguir := 0.0
+				while t_perseguir < 2.8 and not _pular and is_instance_valid(lider):
+					var v := Vector3(lider.velocity.x, 0, lider.velocity.z)
+					var frente := v.normalized() if v.length() > 0.3 else Vector3(0, 0, 1)
+					if cam:
+						cam.mover_plano(lider.global_position - frente * 4.2 + Vector3.UP * 4.2,
+							lider.global_position + frente * 2.5 + Vector3.UP * 0.4, 0.3)
+					await get_tree().process_frame
+					t_perseguir += get_process_delta_time()
+			if not _pular:
+				hud.preto(true)
+				Som.tocar("impacto", -4.0, 0.0, 1.3)
+			await _esperar_cena(0.7)
+	if mino and mino.has_method("golpear_na_cena") and not _pular and not _labirinto:
+		var m := mino.global_transform
 		var lente_chao := m * Vector3(-0.4, 0.45, 8.0)
 		_corte_seco(cam, lente_chao, m * Vector3(0, 0.9, 2.5), 62.0, -0.09)
 		if cam:
@@ -611,6 +662,9 @@ func sortear_destinos(sala: Node) -> void:
 			combates.append(a)
 		elif a.tipo == "chefe":
 			arena = a
+	# a 10ª "sala" é o LABIRINTO: no centro dele fica a arena
+	if _labirinto:
+		arena = _labirinto
 	var pendentes := puzzles_pendentes(sala)
 	pendentes.shuffle()
 	combates.shuffle()
@@ -636,6 +690,11 @@ func sortear_destinos(sala: Node) -> void:
 func teleportar(destino: Node) -> void:
 	if teleportando or destino == null:
 		return
+	# o 1º caminho até um enigma passa por um trecho de labirinto
+	if labirinto_antes_do_enigma and destino.tipo == "puzzle" and destino != area_atual \
+			and _corredores.has(destino) and not _corredor_feito.has(destino):
+		destino = _corredores[destino]
+	var vindo_do_corredor := area_atual is MiniLabirinto
 	teleportando = true
 	Som.tocar("portal")
 	transicao.emit(true)
@@ -651,7 +710,8 @@ func teleportar(destino: Node) -> void:
 	checkpoint = chegada
 	if _fio:
 		_fio.comecar(chegada)
-	if area_atual != destino and destino.tipo != "inicio":
+	# o labirinto e o enigma do outro lado contam como UMA sala
+	if area_atual != destino and destino.tipo != "inicio" and not vindo_do_corredor:
 		salas_visitadas += 1
 		salas_mudou.emit(salas_visitadas, sala_do_minotauro)
 	area_atual = destino
@@ -1090,3 +1150,88 @@ func _ao_quebrar_anfora() -> void:
 	if restam.is_empty():
 		Som.tocar("cura")
 		avisar(["tecla_espaco", "espada", "|", "certo"], 1.8)
+
+
+
+# --------------------------------------------------------------------------
+# O labirinto em volta da arena
+# --------------------------------------------------------------------------
+func _montar_labirinto() -> void:
+	var arena: Node3D = null
+	for a in _areas():
+		if a.tipo == "chefe":
+			arena = a as Node3D
+	if arena == null:
+		return
+	var lab := Labirinto.new()
+	lab.name = "Labirinto"
+	arena.get_parent().add_child(lab)
+	lab.global_transform = arena.global_transform
+	var rng := RandomNumberGenerator.new()
+	rng.seed = randi()   # sorteado a cada partida (e fixo com a semente do teste)
+	lab.montar(rng, arena)
+	_labirinto = lab
+
+
+## Um trecho de labirinto para cada sala de enigma, longe do resto do mapa
+## (40 m ao sul de cada sala).
+func _montar_corredores() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = randi()
+	for a in _areas():
+		if a.tipo != "puzzle":
+			continue
+		var mini := MiniLabirinto.new()
+		mini.name = "LabirintoAte" + String(a.name)
+		a.get_parent().add_child(mini)
+		mini.global_position = (a as Node3D).global_position + Vector3(0, 0, 40)
+		mini.montar(rng, a)
+		_corredores[a] = mini
+
+
+## O Teseu achou a saída do trecho de labirinto: segue para o enigma.
+func sair_do_labirinto(mini: Node) -> void:
+	var alvo: Node = mini.get("destino")
+	if alvo == null or teleportando:
+		return
+	_corredor_feito[alvo] = true
+	teleportar(alvo)
+
+
+## O Teseu atravessou o portão no centro do labirinto: começa a luta e o
+## portão se fecha atrás dele.
+func entrar_na_arena(arena: Node) -> void:
+	if arena == null or area_atual == arena:
+		return
+	area_atual = arena
+	checkpoint = arena.ponto_de_chegada()
+	if _fio and _jogador:
+		_fio.comecar(_jogador.global_position)
+	titulo_sala.emit(arena.nome_sala)
+	_aplicar_tilt(arena)
+	arena.ao_chegar()
+	get_tree().create_timer(0.8).timeout.connect(func(): get_tree().call_group("porta_minotauro", "fechar"))
+
+
+
+## Minitaurinhos (atores) que saem pelo portão da arena e correm pelo caminho
+## do labirinto até a entrada — "atrás do Teseu".
+func _crias_no_labirinto(mino: Node3D) -> Array[Node]:
+	var lista: Array[Node] = []
+	var cena: PackedScene = mino.get("cena_minitaurinho")
+	if cena == null or _labirinto == null:
+		return lista
+	var volta := Array(_labirinto.caminho_solucao())
+	volta.reverse()   # do portão até a entrada
+	if volta.size() < 2:
+		return lista
+	for i in 3:
+		var c := cena.instantiate() as Node3D
+		_labirinto.add_child(c)
+		c.global_position = (volta[0] as Vector3) + Vector3((i - 1) * 0.8, 0.2, -i * 0.3)
+		if c.has_method("entrar_na_cena"):
+			c.entrar_na_cena()
+			c.correr_no_caminho(volta.slice(1))
+		Efeitos.fumaca(c.global_position)
+		lista.append(c)
+	return lista

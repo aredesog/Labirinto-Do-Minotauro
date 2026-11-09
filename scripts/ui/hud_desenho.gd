@@ -172,6 +172,22 @@ func _desenhar_dicas_no_mundo() -> void:
 	var area: Node = jogo.get("area_atual") if jogo else null
 	if area == null or not area.has_method("portas") or bool(jogo.get("teleportando")):
 		return
+	# trecho de labirinto: seta dourada sobre a saída, com o enigma que espera lá
+	if area.has_method("saida_global"):
+		var sg: Vector3 = area.saida_global()
+		var topo_s := sg + Vector3.UP * 3.4
+		if Vector2(sg.x - pj.x, sg.z - pj.z).length() > 1.6 and not cam.is_position_behind(topo_s):
+			var ts := cam.unproject_position(topo_s) + Vector2(0, absf(sin(_tempo * 4.0)) * 10.0)
+			var seta_s := PackedVector2Array([ts + Vector2(-13, -16), ts + Vector2(13, -16), ts + Vector2(13, -2),
+				ts + Vector2(22, -2), ts + Vector2(0, 18), ts + Vector2(-22, -2), ts + Vector2(-13, -2)])
+			var fechada_s := seta_s.duplicate()
+			fechada_s.append(seta_s[0])
+			draw_colored_polygon(seta_s, Color(1.0, 0.79, 0.29, 0.95))
+			draw_polyline(fechada_s, CONTORNO, 3.0, true)
+			var hud := get_tree().get_first_node_in_group("hud")
+			var ics: Array = hud.icones_da_sala(area.get("destino")) if hud else []
+			for k in ics.size():
+				Pictograma.desenhar(self, String(ics[k]), ts + Vector2((k - (ics.size() - 1) / 2.0) * 32.0, -42.0), 13.0)
 	for porta in area.portas():
 		if not porta.ativa:
 			continue

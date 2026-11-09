@@ -244,6 +244,12 @@ static func icones_da_sala(area: Node) -> Array:
 			return ["casa"]
 		"chefe":
 			return ["minotauro"]
+		"labirinto":
+			return ["novelo", "seta", "minotauro"]
+		"corredor":
+			var lista: Array = ["novelo", "seta"]
+			lista.append_array(icones_da_sala(area.get("destino")))
+			return lista
 		"combate":
 			return ["espada", "minitauro"]
 		"puzzle":
