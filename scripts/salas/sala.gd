@@ -1,0 +1,244 @@
+class_name Sala
+extends AreaSala
+## Sala com inimigos (e, se for do tipo "puzzle", um enigma):
+##   1. Teseu chega pelo portal -> as portas fecham e surgem os minitaurinhos.
+##   2. Todos derrotados:
+##        - sala de combate: portas abrem, Teseu recupera vida;
+##        - sala de puzzle:  o enigma é liberado.
+##   3. Puzzle resolvido -> a cela abre e os atenienses são libertados.
+##   4. Sala vencida -> o GerenciadorJogo sorteia o destino de cada portal.
+## Salas de combate podem ser sorteadas de novo: voltam com +1 inimigo.
+##
+## Filhos usados (encontrados por grupo):
+##   "grade_sala", "porta_sala", "cela", "puzzle", "spawn_inimigo"
+
+enum Estado { ESPERANDO, COMBATE, PUZZLE, CONCLUIDA }
+
+@export_range(1, 8) var quantidade_inimigos: int = 3
+@export var maximo_inimigos: int = 6
+@export var cena_inimigo: PackedScene
+## Minitaurinho que arremessa pedras (segundo tipo de inimigo).
+@export var cena_arremessador: PackedScene
+## Quantos dos inimigos da sala são arremessadores (+1 a cada 2 revisitas).
+@export var arremessadores: int = 0
+## (antigo) Texto de dica. Não é mais mostrado: o enigma se explica numa
+## cena curta sem texto (Puzzle.demonstrar) e num aviso em pictogramas.
+@export_multiline var dica_puzzle: String = ""
+## Meios corações recuperados ao vencer uma sala de combate.
+@export var cura_ao_vencer: int = 4
+
+var estado: Estado = Estado.ESPERANDO
+var visitas := 0
+var _vivos: Array[Node] = []
+var _jogo: Node
+
+
+func _ready() -> void:
+	_jogo = get_tree().get_first_node_in_group("jogo")
+	var puzzle := _puzzle()
+	if puzzle:
+		puzzle.resolvido.connect(_ao_resolver_puzzle)
+		puzzle.erro.connect(_ao_errar_puzzle)
+		puzzle.desativar()
+
+
+func esta_concluida() -> bool:
+	return estado == Estado.CONCLUIDA
+
+
+func _filhos_no_grupo(grupo: String) -> Array[Node]:
+	var lista: Array[Node] = []
+	for n in find_children("*", "", true, false):
+		if n.is_in_group(grupo):
+			lista.append(n)
+	return lista
+
+
+func _puzzle() -> Node:
+	var lista := _filhos_no_grupo("puzzle")
+	return lista[0] if lista.size() > 0 else null
+
+
+# --------------------------------------------------------------------------
+func ao_chegar() -> void:
+	super.ao_chegar()
+	if estado == Estado.CONCLUIDA and tipo == "combate":
+		# revisita: a sala volta, um pouco mais difícil
+		estado = Estado.ESPERANDO
+	if estado == Estado.ESPERANDO:
+		iniciar()
+	_pedir_socorro()
+
+
+## Os atenienses presos pedem socorro com um "!" (o mesmo da abertura),
+## lembrando o jogador do objetivo da sala.
+func _pedir_socorro() -> void:
+	for c in _filhos_no_grupo("cela"):
+		if c.aberta:
+			continue
+		var presos := c.get_children().filter(func(n): return n is Prisioneiro)
+		if presos.is_empty():
+			return
+		await get_tree().create_timer(0.9).timeout
+		var hud := get_tree().get_first_node_in_group("hud")
+		if hud and is_inside_tree() and not c.aberta:
+			hud.balao(presos[presos.size() / 2], ["exclamacao"], 1.6, 1.8)
+		return
+
+
+func iniciar() -> void:
+	visitas += 1
+	estado = Estado.COMBATE
+	for p in portas():
+		p.ativar(false)
+	for g in _filhos_no_grupo("grade_sala"):
+		g.fechar()
+	if _jogo:
+		_jogo.sala_atual = self
+	var qtd := mini(quantidade_inimigos + (visitas - 1), maximo_inimigos) if tipo == "combate" \
+		else quantidade_inimigos
+	var n_arr := arremessadores + (int((visitas - 1) / 2.0) if tipo == "combate" and arremessadores > 0 else 0)
+	_gerar_inimigos(qtd, mini(n_arr, qtd - 1))
+	_musica_da_sala()
+
+
+## Combate -> música de combate; enigma liberado -> música de enigma;
+## sala vencida -> exploração.
+func _musica_da_sala() -> void:
+	match estado:
+		Estado.COMBATE:
+			Som.musica("combate", 0.8)
+		Estado.PUZZLE:
+			Som.musica("enigma", 1.5)
+		_:
+			Som.musica("exploracao", 2.0)
+
+
+func _gerar_inimigos(qtd: int, n_arremessadores := 0) -> void:
+	if cena_inimigo == null:
+		push_warning("%s: sem cena_inimigo definida." % name)
+		_verificar_combate()
+		return
+	var pontos := _filhos_no_grupo("spawn_inimigo")
+	pontos.shuffle()
+	for i in qtd:
+		var cena := cena_arremessador if i < n_arremessadores and cena_arremessador else cena_inimigo
+		var inimigo := cena.instantiate()
+		add_child(inimigo)
+		var p: Node3D = pontos[i % pontos.size()] if pontos.size() > 0 else self
+		inimigo.global_position = p.global_position + Vector3(randf_range(-0.3, 0.3), 0.1, randf_range(-0.3, 0.3))
+		inimigo.morreu.connect(_ao_inimigo_morrer)
+		_vivos.append(inimigo)
+
+
+func _ao_inimigo_morrer(quem: Node) -> void:
+	_vivos.erase(quem)
+	_verificar_combate()
+
+
+func _verificar_combate() -> void:
+	if not _vivos.is_empty() or estado != Estado.COMBATE:
+		return
+	var puzzle := _puzzle()
+	if puzzle:
+		estado = Estado.PUZZLE
+		puzzle.ativar()
+		_musica_da_sala()
+		# no lugar do texto de dica: uma cena curta MOSTRANDO o que fazer
+		# (só na 1ª vez; depois, só o aviso em pictogramas)
+		if not puzzle.demonstrado and Config.demonstrar_enigmas:
+			puzzle.demonstrar()
+		elif _jogo:
+			_jogo.avisar(puzzle.icones_dica(), 3.0)
+	else:
+		_concluir()
+
+
+func _ao_errar_puzzle() -> void:
+	# Errar o puzzle chama reforços (deixa a sala mais emocionante).
+	if estado == Estado.PUZZLE and _vivos.size() < 2:
+		_gerar_inimigos(1)
+
+
+func _ao_resolver_puzzle() -> void:
+	if estado == Estado.CONCLUIDA:
+		return
+	for i in _vivos:
+		if is_instance_valid(i):
+			i.levar_dano(99)
+	_vivos.clear()
+	var libertados := 0
+	var celas := _filhos_no_grupo("cela")
+	for c in celas:
+		libertados += c.abrir()
+	_comemorar(celas)
+	if _jogo:
+		_jogo.libertar_prisioneiros(libertados)
+	await get_tree().create_timer(1.2).timeout
+	_concluir()
+
+
+func _concluir() -> void:
+	estado = Estado.CONCLUIDA
+	_musica_da_sala()
+	for g in _filhos_no_grupo("grade_sala"):
+		g.abrir()
+	if _jogo == null:
+		return
+	if _jogo.sala_atual == self:
+		_jogo.sala_atual = null
+	if tipo == "puzzle":
+		_jogo.registrar_puzzle_concluido(nome_sala)
+	else:
+		_jogo.sala_combate_vencida(self)
+	_jogo.sortear_destinos(self)
+
+
+## Volta a sala ao estado inicial (morte do Teseu ou "reiniciar sala").
+func reiniciar() -> void:
+	if estado == Estado.CONCLUIDA:
+		return
+	for i in _vivos:
+		if is_instance_valid(i):
+			i.queue_free()
+	_vivos.clear()
+	var puzzle := _puzzle()
+	if puzzle:
+		puzzle.resetar()
+		puzzle.desativar()
+	estado = Estado.ESPERANDO
+	visitas = maxi(visitas - 1, 0)
+
+
+
+## Cela aberta: corte rápido em close nos atenienses pulando, com balões de
+## coração (no começo do jogo eles choravam) — a recompensa do enigma.
+func _comemorar(celas: Array[Node]) -> void:
+	if celas.is_empty():
+		return
+	var cela := celas[0] as Node3D
+	var cam := get_viewport().get_camera_3d()
+	var hud := get_tree().get_first_node_in_group("hud")
+	var teseu := get_tree().get_first_node_in_group("jogador")
+	if cam == null or not cam.has_method("plano"):
+		return
+	if teseu:
+		teseu.definir_controle(false)
+	if hud and hud.has_method("cinema_tom"):
+		hud.cinema_tom(Color(1.12, 0.98, 0.82), 1.15, 0.45, 0.1)
+	if _jogo:
+		_jogo.cinematica.emit(true)
+	cam.plano(cela.to_global(Vector3(0.7, 1.1, 3.2)), cela.to_global(Vector3(0, 0.7, -0.3)), 50.0)
+	cam.mover_plano(cela.to_global(Vector3(0.3, 0.9, 2.4)), cela.to_global(Vector3(0, 0.8, -0.2)), 1.8)
+	Som.tocar("cura", -2.0)
+	await get_tree().create_timer(0.5).timeout
+	if hud and is_instance_valid(cela):
+		var presos := cela.get_children().filter(func(n): return n is Prisioneiro)
+		for i in mini(presos.size(), 3):
+			hud.balao(presos[i], ["coracao"], 1.1, 1.9 + i * 0.25, false)
+	await get_tree().create_timer(1.2).timeout
+	cam.soltar()
+	if _jogo:
+		_jogo.cinematica.emit(false)
+	if teseu and int(teseu.get("vida")) > 0 and not (_jogo and _jogo.terminou):
+		teseu.definir_controle(true)
