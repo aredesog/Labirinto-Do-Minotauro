@@ -6,8 +6,6 @@ Jogo 3D de ação e enigmas feito para a disciplina de **Computação Gráfica**
 (Ciência da Computação, UNIFAL-MG), com **Blender** e **Godot 4.7**.
 Visual de maquete de brinquedo, inspirado em *The Legend of Zelda: Link's Awakening* (remake).
 
-![Tela de título](docs/capturas/00_titulo.png)
-
 ## A história
 
 Atenas deve pagar um tributo a Creta: 14 jovens são jogados no labirinto
@@ -47,7 +45,7 @@ integrada (ex.: Radeon 610M, Intel UHD) o jogo já começa na qualidade **baixa*
 ## Jogo sem texto (para qualquer pessoa, em qualquer idioma)
 
 Pedido do professor: o jogo tem que ser fácil de entender até para quem nunca jogou
-nada, sem depender de idioma. A referência foi **Angry Birds**: nenhuma palavra na tela.
+nada, sem depender de idioma.
 Todo texto do jogo virou **pictograma** desenhado por código (`scripts/ui/pictograma.gd`,
 mais de 50 ícones vetoriais no mesmo estilo dos corações do HUD) organizado em
 **frases visuais** (`scripts/ui/frase_visual.gd`):
@@ -370,7 +368,7 @@ para `docs/capturas/` e o README já mostra as imagens novas.
 ## O que pode melhorar
 
 ### Prioridade alta
-- [x] **Modelo final do Teseu** (Tripo3D) com animação procedural do corpo inteiro.
+- [x] **Modelo final do Teseu** com animação procedural do corpo inteiro.
 - [x] **Jogo sem texto**: pictogramas, pantomima e enigmas que se demonstram.
 - [x] **Modelo final do minitaurinho** e do arremessador (modelo do grupo, com rig e animações).
 - [x] **Ariadne** com o modelo do grupo, rig e animações.
